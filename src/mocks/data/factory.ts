@@ -302,6 +302,151 @@ export const trainings = [
   created_at: faker.date.past({ years: 0.5 }).toISOString(),
 }))
 
+function toIsoDate(value: Date) {
+  return value.toISOString().split('T')[0]
+}
+
+function addMonthsToIsoDate(baseDate: string, months: number) {
+  const date = new Date(`${baseDate}T00:00:00`)
+  date.setMonth(date.getMonth() + months)
+  return toIsoDate(date)
+}
+
+function addDaysToIsoDate(baseDate: string, days: number) {
+  const date = new Date(`${baseDate}T00:00:00`)
+  date.setDate(date.getDate() + days)
+  return toIsoDate(date)
+}
+
+function getSeedValue(input: string) {
+  return input.split('').reduce((total, char) => total + char.charCodeAt(0), 0)
+}
+
+const complianceReadyTrainings = trainings.filter(training => training.status !== 'scheduled')
+
+const ppeCatalogByRole: Record<string, Array<{ item_name: string; ca_number: string; replacement_cycle_days: number }>> = {
+  Professor: [
+    { item_name: 'Protetor auricular de inserção', ca_number: 'CA 42111', replacement_cycle_days: 180 },
+    { item_name: 'Luva para apoio em atividades laboratoriais', ca_number: 'CA 39871', replacement_cycle_days: 180 },
+  ],
+  Coordenador: [
+    { item_name: 'Colete de brigada escolar', ca_number: 'CA 28741', replacement_cycle_days: 365 },
+  ],
+  'Auxiliar de limpeza': [
+    { item_name: 'Luva nitrílica de proteção química', ca_number: 'CA 33458', replacement_cycle_days: 120 },
+    { item_name: 'Bota impermeável PVC', ca_number: 'CA 40218', replacement_cycle_days: 180 },
+  ],
+  Cozinheira: [
+    { item_name: 'Luva térmica para cozinha industrial', ca_number: 'CA 31109', replacement_cycle_days: 180 },
+    { item_name: 'Avental térmico impermeável', ca_number: 'CA 28763', replacement_cycle_days: 240 },
+  ],
+  Secretária: [
+    { item_name: 'Protetor auricular para eventos escolares', ca_number: 'CA 42111', replacement_cycle_days: 365 },
+  ],
+  Porteiro: [
+    { item_name: 'Colete refletivo', ca_number: 'CA 29564', replacement_cycle_days: 365 },
+    { item_name: 'Capa impermeável de segurança', ca_number: 'CA 34420', replacement_cycle_days: 240 },
+  ],
+  'Bibliotecária': [
+    { item_name: 'Máscara PFF2 para higienização de acervo', ca_number: 'CA 38992', replacement_cycle_days: 120 },
+  ],
+  Monitor: [
+    { item_name: 'Colete refletivo para pátio e embarque', ca_number: 'CA 29564', replacement_cycle_days: 240 },
+  ],
+}
+
+export const employeeTrainingEnrollments = employees.flatMap((employee, index) => {
+  const seed = getSeedValue(employee.id)
+  const assignmentCount = employee.status === 'active' ? 2 : 1
+
+  return Array.from({ length: assignmentCount }, (_, offset) => {
+    const training = complianceReadyTrainings[(seed + offset + index) % complianceReadyTrainings.length]
+    const completedAt = toIsoDate(faker.date.recent({ days: 180 }))
+    const status = offset === assignmentCount - 1 && employee.status === 'on_leave' ? 'in_progress' : 'completed'
+
+    return {
+      id: faker.string.uuid(),
+      tenant_id: school.id,
+      employee_id: employee.id,
+      training_id: training.id,
+      status,
+      completed_at: status === 'completed' ? completedAt : null,
+      valid_until: status === 'completed' ? addMonthsToIsoDate(completedAt, training.validity_months) : null,
+      instructor_name: training.instructor,
+      created_at: faker.date.recent({ days: 240 }).toISOString(),
+    }
+  })
+})
+
+export const employeePpeDeliveries = employees.map((employee, index) => {
+  const availableItems = ppeCatalogByRole[employee.role] ?? [
+    { item_name: 'Kit básico de segurança ocupacional', ca_number: 'CA 10000', replacement_cycle_days: 180 },
+  ]
+  const seed = getSeedValue(employee.id)
+  const selectedItem = availableItems[(seed + index) % availableItems.length]
+  const deliveredAt = toIsoDate(faker.date.recent({ days: 210 }))
+
+  return {
+    id: faker.string.uuid(),
+    tenant_id: school.id,
+    employee_id: employee.id,
+    item_name: selectedItem.item_name,
+    ca_number: selectedItem.ca_number,
+    delivered_at: deliveredAt,
+    next_replacement_at: addDaysToIsoDate(deliveredAt, selectedItem.replacement_cycle_days),
+    signed_at: deliveredAt,
+    created_at: faker.date.recent({ days: 210 }).toISOString(),
+  }
+})
+
+function getDocumentStatus(expiresAt: string | null) {
+  if (!expiresAt) return 'pending_validation' as const
+
+  const expirationDate = new Date(`${expiresAt}T00:00:00`)
+  const now = new Date()
+  const diffInDays = Math.ceil((expirationDate.getTime() - now.getTime()) / 86400000)
+
+  if (diffInDays <= 45) return 'expiring_soon' as const
+  return 'validated' as const
+}
+
+export const employeeComplianceDocuments = [
+  ...employeeTrainingEnrollments
+    .filter(enrollment => enrollment.status === 'completed')
+    .map(enrollment => ({
+      id: faker.string.uuid(),
+      tenant_id: enrollment.tenant_id,
+      employee_id: enrollment.employee_id,
+      training_enrollment_id: enrollment.id,
+      ppe_delivery_id: null,
+      document_type: 'training_certificate' as const,
+      file_name: `certificado-${enrollment.employee_id.slice(0, 6)}-${enrollment.training_id.slice(0, 6)}.pdf`,
+      mime_type: 'application/pdf',
+      file_size_bytes: faker.number.int({ min: 250_000, max: 1_900_000 }),
+      issued_at: enrollment.completed_at ?? toIsoDate(new Date()),
+      expires_at: enrollment.valid_until,
+      status: getDocumentStatus(enrollment.valid_until),
+      notes: 'Certificado anexado ao prontuário ocupacional do colaborador.',
+      uploaded_at: faker.date.recent({ days: 120 }).toISOString(),
+    })),
+  ...employeePpeDeliveries.map(delivery => ({
+    id: faker.string.uuid(),
+    tenant_id: delivery.tenant_id,
+    employee_id: delivery.employee_id,
+    training_enrollment_id: null,
+    ppe_delivery_id: delivery.id,
+    document_type: 'ppe_delivery_receipt' as const,
+    file_name: `entrega-epi-${delivery.employee_id.slice(0, 6)}-${delivery.id.slice(0, 6)}.pdf`,
+    mime_type: 'application/pdf',
+    file_size_bytes: faker.number.int({ min: 180_000, max: 980_000 }),
+    issued_at: delivery.delivered_at,
+    expires_at: delivery.next_replacement_at,
+    status: getDocumentStatus(delivery.next_replacement_at),
+    notes: 'Comprovante assinado pelo colaborador no ato da entrega.',
+    uploaded_at: faker.date.recent({ days: 120 }).toISOString(),
+  })),
+]
+
 // Complaints
 const complaintCategoryLabels: Record<string, string> = {
   moral_harassment: 'Assédio Moral',
