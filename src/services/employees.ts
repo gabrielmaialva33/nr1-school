@@ -1,4 +1,6 @@
 import { apiJson } from '@/lib/api-client'
+import type { PaginatedResponse } from '@/types/api'
+export type { PaginationMeta } from '@/types/api'
 
 export type EmployeeStatus = 'active' | 'on_leave' | 'inactive'
 
@@ -14,18 +16,7 @@ export interface Employee {
   email: string
 }
 
-export interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-export interface EmployeesResponse {
-  meta: PaginationMeta
-  data: Employee[]
-}
+export type EmployeesResponse = PaginatedResponse<Employee>
 
 export async function fetchEmployees(params: {
   page: number
@@ -52,4 +43,8 @@ export async function fetchEmployeesStats() {
     active: payload.data.filter(employee => employee.status === 'active').length,
     on_leave: payload.data.filter(employee => employee.status === 'on_leave').length,
   }
+}
+
+export async function fetchEmployeeById(employeeId: string) {
+  return apiJson<Employee>(`/api/employees/${employeeId}`)
 }

@@ -1,5 +1,6 @@
 import { apiJson } from '@/lib/api-client'
-import type { Employee, PaginationMeta } from './employees'
+import type { PaginationMeta } from '@/types/api'
+import type { Employee } from './employees'
 
 export type TrainingStatus = 'scheduled' | 'in_progress' | 'completed'
 export type ComplianceDocumentType = 'training_certificate' | 'ppe_delivery_receipt'

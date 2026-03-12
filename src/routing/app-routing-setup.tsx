@@ -6,6 +6,7 @@ import { LoginPage } from '@/pages/auth/login'
 const DashboardPage = lazy(() => import('@/pages/dashboard/page').then(m => ({ default: m.DashboardPage })))
 const EnvironmentsPage = lazy(() => import('@/pages/environments/page').then(m => ({ default: m.EnvironmentsPage })))
 const EmployeesPage = lazy(() => import('@/pages/employees/page').then(m => ({ default: m.EmployeesPage })))
+const EmployeeProfilePage = lazy(() => import('@/pages/employees/profile-page').then(m => ({ default: m.EmployeeProfilePage })))
 const AssessmentsPage = lazy(() => import('@/pages/assessments/page').then(m => ({ default: m.AssessmentsPage })))
 const AssessmentResultsPage = lazy(() => import('@/pages/assessments/results-page').then(m => ({ default: m.AssessmentResultsPage })))
 const RisksPage = lazy(() => import('@/pages/risks/page').then(m => ({ default: m.RisksPage })))
@@ -35,6 +36,7 @@ export function AppRoutingSetup() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/environments" element={<EnvironmentsPage />} />
           <Route path="/employees" element={<EmployeesPage />} />
+          <Route path="/employees/:employeeId" element={<EmployeeProfilePage />} />
           <Route path="/assessments" element={<AssessmentsPage />} />
           <Route path="/assessments/results" element={<AssessmentResultsPage />} />
           <Route path="/risks" element={<RisksPage />} />
