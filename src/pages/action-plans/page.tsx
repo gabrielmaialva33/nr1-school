@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { formatDatePtBr, getNameInitials } from '@/lib/formatters'
 import {
   Select,
   SelectContent,
@@ -181,15 +182,6 @@ function buildBoardColumns(plans: ActionPlan[]): Record<BoardColumnId, ActionPla
   }
 }
 
-function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(part => part[0]?.toUpperCase() ?? '')
-    .join('')
-}
-
 function KanbanCard({
   plan,
   onSelect,
@@ -272,7 +264,7 @@ function KanbanCard({
       <div className="mt-4 grid gap-2">
         <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
           <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
-            {getInitials(plan.responsible_name)}
+            {getNameInitials(plan.responsible_name)}
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
@@ -290,7 +282,7 @@ function KanbanCard({
           )}
         >
           <Calendar className="size-3.5" />
-          <span>Prazo {new Date(plan.deadline).toLocaleDateString('pt-BR')}</span>
+          <span>Prazo {formatDatePtBr(plan.deadline)}</span>
         </div>
       </div>
 
@@ -818,7 +810,7 @@ export function ActionPlansPage() {
                         'font-medium text-destructive',
                     )}
                   >
-                    {new Date(selectedPlan.deadline).toLocaleDateString('pt-BR')}
+                    {formatDatePtBr(selectedPlan.deadline)}
                   </p>
                 </div>
               </div>

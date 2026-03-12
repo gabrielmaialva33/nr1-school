@@ -33,6 +33,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { formatDatePtBr } from '@/lib/formatters'
 import { createPaginationMeta } from '@/lib/pagination'
 import { cn } from '@/lib/utils'
 import {
@@ -97,10 +98,6 @@ const statusMeta: Record<TrainingStatus, { label: string; variant: 'success' | '
   completed: { label: 'Regular', variant: 'success' },
   scheduled: { label: 'Agendado', variant: 'info' },
   in_progress: { label: 'Em andamento', variant: 'warning' },
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('pt-BR').format(new Date(value))
 }
 
 export function TrainingsPage() {
@@ -310,9 +307,9 @@ export function TrainingsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-muted-foreground">{training.instructor}</TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(training.scheduled_date)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDatePtBr(training.scheduled_date)}</TableCell>
                     <TableCell className="hidden md:table-cell font-medium">{training.duration_hours}h</TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">{formatDate(training.validity_date)}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">{formatDatePtBr(training.validity_date)}</TableCell>
                     <TableCell>
                       <Badge variant={statusMeta[training.status].variant} appearance="light">
                         {statusMeta[training.status].label}
@@ -440,11 +437,11 @@ export function TrainingsPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-muted-foreground">Data agendada</p>
-                    <p className="text-sm font-medium">{formatDate(selectedTraining.scheduled_date)}</p>
+                    <p className="text-sm font-medium">{formatDatePtBr(selectedTraining.scheduled_date)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-muted-foreground">Vencimento</p>
-                    <p className="text-sm font-medium">{formatDate(selectedTraining.validity_date)}</p>
+                    <p className="text-sm font-medium">{formatDatePtBr(selectedTraining.validity_date)}</p>
                   </div>
                 </div>
 

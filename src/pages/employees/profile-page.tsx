@@ -19,6 +19,16 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  addDaysToIsoDate,
+  addMonthsToIsoDate,
+  formatCpfMasked,
+  formatDatePtBr,
+  formatDateTimePtBr,
+  formatFileSizeFromBytes,
+  formatOptionalFileSize,
+  getNameInitials,
+} from '@/lib/formatters'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,25 +43,12 @@ import { fetchEmployeeById, type Employee } from '@/services/employees'
 import {
   ACCEPTED_UPLOAD_FILE_TYPES,
   MAX_UPLOAD_FILE_SIZE,
-  addMonthsToDate,
   createEmptyUploadDraft,
   documentStatusMeta,
   documentTypeMeta,
   employeeStatusMeta,
-  formatBytes,
-  formatCpf,
-  formatDate,
-  formatDateTime,
-  formatFileSize,
-  getInitials,
   type UploadDocumentDraft,
 } from './profile-utils'
-
-function addDaysToDate(baseDate: string, days: number) {
-  const date = new Date(`${baseDate}T00:00:00`)
-  date.setDate(date.getDate() + days)
-  return date.toISOString().split('T')[0]
-}
 
 function ProfileKpi({
   title,
@@ -194,11 +191,11 @@ export function EmployeeProfilePage() {
 
     if (uploadDraft.document_type === 'training_certificate') {
       return selectedTrainingOption
-        ? addMonthsToDate(uploadDraft.issued_at, selectedTrainingOption.validity_months)
+        ? addMonthsToIsoDate(uploadDraft.issued_at, selectedTrainingOption.validity_months)
         : ''
     }
 
-    return addDaysToDate(uploadDraft.issued_at, 180)
+    return addDaysToIsoDate(uploadDraft.issued_at, 180)
   }, [selectedTrainingOption, uploadDraft.document_type, uploadDraft.issued_at])
 
   const uploadChecklist = useMemo(() => {
@@ -351,19 +348,24 @@ export function EmployeeProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="employee-profile-shell space-y-6">
       <section className="employee-profile-hero">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="flex flex-col gap-5 md:flex-row md:items-start">
-            <Avatar className="size-18 border border-white/40 shadow-sm">
-              <AvatarFallback className="bg-white/90 text-lg font-semibold text-[var(--profile-hero-accent)] dark:bg-white/10 dark:text-white">
-                {getInitials(employee.name)}
+            <Avatar className="size-18 border border-white/15 bg-background/10 shadow-md shadow-black/15 ring-1 ring-white/8">
+              <AvatarFallback className="bg-white/88 text-lg font-semibold text-[var(--profile-hero-accent)] dark:bg-slate-900/80 dark:text-slate-100">
+                {getNameInitials(employee.name)}
               </AvatarFallback>
             </Avatar>
 
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Button variant="outline" size="sm" className="gap-2 bg-background/80" onClick={() => navigate('/employees')}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="employee-profile-toolbar-button gap-2"
+                  onClick={() => navigate('/employees')}
+                >
                   <ArrowLeft className="size-4" />
                   Voltar
                 </Button>
@@ -389,7 +391,7 @@ export function EmployeeProfilePage() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="employee-profile-info">
                   <p className="text-xs text-muted-foreground">CPF</p>
-                  <p className="mt-1 text-sm font-medium">{formatCpf(employee.cpf)}</p>
+                  <p className="mt-1 text-sm font-medium">{formatCpfMasked(employee.cpf)}</p>
                 </div>
                 <div className="employee-profile-info">
                   <p className="text-xs text-muted-foreground">Cargo</p>
@@ -401,29 +403,35 @@ export function EmployeeProfilePage() {
                 </div>
                 <div className="employee-profile-info">
                   <p className="text-xs text-muted-foreground">Admissão</p>
-                  <p className="mt-1 text-sm font-medium">{formatDate(employee.admission_date)}</p>
+                  <p className="mt-1 text-sm font-medium">{formatDatePtBr(employee.admission_date)}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[380px]">
-            <Button variant="primary" className="gap-2" onClick={() => setIsUploadOpen(true)}>
-              <Upload className="size-4" />
-              Subir certificado
-            </Button>
-            <Button variant="outline" className="gap-2" onClick={() => toast.success('Dossiê exportado com sucesso')}>
-              <Download className="size-4" />
-              Exportar dossiê
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/5"
-              onClick={() => toast.success(`${employee.name} desligado com sucesso`)}
-            >
-              <UserMinus className="size-4" />
-              Desligar
-            </Button>
+          <div className="employee-profile-actions xl:min-w-[400px]">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Button variant="primary" className="gap-2" onClick={() => setIsUploadOpen(true)}>
+                <Upload className="size-4" />
+                Subir certificado
+              </Button>
+              <Button
+                variant="outline"
+                className="employee-profile-toolbar-button gap-2"
+                onClick={() => toast.success('Dossiê exportado com sucesso')}
+              >
+                <Download className="size-4" />
+                Exportar dossiê
+              </Button>
+              <Button
+                variant="outline"
+                className="employee-profile-toolbar-button employee-profile-toolbar-button-danger gap-2"
+                onClick={() => toast.success(`${employee.name} desligado com sucesso`)}
+              >
+                <UserMinus className="size-4" />
+                Desligar
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -506,11 +514,11 @@ export function EmployeeProfilePage() {
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Conclusão</p>
-                          <p>{formatDate(enrollment.completed_at)}</p>
+                          <p>{formatDatePtBr(enrollment.completed_at)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Validade</p>
-                          <p>{formatDate(enrollment.valid_until)}</p>
+                          <p>{formatDatePtBr(enrollment.valid_until)}</p>
                         </div>
                       </div>
                     </div>
@@ -557,11 +565,11 @@ export function EmployeeProfilePage() {
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Entrega</p>
-                        <p>{formatDate(delivery.delivered_at)}</p>
+                        <p>{formatDatePtBr(delivery.delivered_at)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Próxima troca</p>
-                        <p>{formatDate(delivery.next_replacement_at)}</p>
+                        <p>{formatDatePtBr(delivery.next_replacement_at)}</p>
                       </div>
                     </div>
                   </div>
@@ -621,8 +629,8 @@ export function EmployeeProfilePage() {
                             : `EPI: ${ppeDelivery?.item_name ?? 'Não vinculado'}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Upload em {formatDateTime(document.uploaded_at)} •{' '}
-                          {formatBytes(document.file_size_bytes)}
+                          Upload em {formatDateTimePtBr(document.uploaded_at)} •{' '}
+                          {formatFileSizeFromBytes(document.file_size_bytes)}
                         </p>
                         {document.notes && (
                           <p className="rounded-xl bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
@@ -633,11 +641,11 @@ export function EmployeeProfilePage() {
                       <div className="grid gap-3 text-sm md:min-w-72 md:grid-cols-2">
                         <div>
                           <p className="text-xs text-muted-foreground">Emissão</p>
-                          <p>{formatDate(document.issued_at)}</p>
+                          <p>{formatDatePtBr(document.issued_at)}</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Validade</p>
-                          <p>{formatDate(document.expires_at)}</p>
+                          <p>{formatDatePtBr(document.expires_at)}</p>
                         </div>
                       </div>
                     </div>
@@ -682,7 +690,7 @@ export function EmployeeProfilePage() {
               <div className="employee-profile-info">
                 <p className="text-xs text-muted-foreground">Atualização do dossiê</p>
                 <p className="mt-1 text-sm font-medium">
-                  {formatDateTime(compliance.meta.generated_at)}
+                  {formatDateTimePtBr(compliance.meta.generated_at)}
                 </p>
               </div>
               <div className="employee-profile-info">
@@ -778,7 +786,7 @@ export function EmployeeProfilePage() {
                           {uploadDraft.file?.name || 'Nenhum arquivo selecionado'}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {formatFileSize(uploadDraft.file)}
+                          {formatOptionalFileSize(uploadDraft.file)}
                         </p>
                       </div>
                       <Badge
@@ -985,7 +993,7 @@ export function EmployeeProfilePage() {
                         {(uploadDraft.expires_at || normalizedExpiryDate) && (
                           <Badge variant="outline">
                             Validade{' '}
-                            {formatDate(uploadDraft.expires_at || normalizedExpiryDate)}
+                            {formatDatePtBr(uploadDraft.expires_at || normalizedExpiryDate)}
                           </Badge>
                         )}
                       </div>

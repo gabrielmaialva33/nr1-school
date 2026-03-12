@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Search, Bell, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetBody, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -27,6 +27,8 @@ import { fetchAuthSession, switchTenantSession, type AuthSessionPayload } from '
 import { fetchTenants, type TenantSummary } from '@/services/tenants';
 import { getCurrentTenantId, setCurrentTenantId } from '@/lib/tenant';
 import { toast } from 'sonner';
+import { useTheme } from 'next-themes';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',
@@ -51,7 +53,9 @@ export function Header({
   const [session, setSession] = useState<AuthSessionPayload | null>(null);
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
   const [isSwitchingTenant, setIsSwitchingTenant] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const location = useLocation();
+  const { resolvedTheme, setTheme } = useTheme();
 
   const pathnames = location.pathname.split('/').filter((x) => x);
   const currentPath = pathnames[pathnames.length - 1] ?? '';
@@ -80,6 +84,10 @@ export function Header({
     };
   }, []);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   async function handleTenantSwitch(tenantId: string) {
     if (tenantId === currentTenantId || isSwitchingTenant) return;
 
@@ -93,6 +101,10 @@ export function Header({
     } finally {
       setIsSwitchingTenant(false);
     }
+  }
+
+  function handleThemeToggle() {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   }
 
   return (
@@ -164,6 +176,26 @@ export function Header({
           <Search className="h-5 w-5" />
           <span className="sr-only">Search</span>
         </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              onClick={handleThemeToggle}
+              aria-label={mounted && resolvedTheme === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'}
+            >
+              {mounted && resolvedTheme === 'dark' ? (
+                <Sun className="h-5 w-5" />
+              ) : (
+                <Moon className="h-5 w-5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent variant="light">
+            {mounted && resolvedTheme === 'dark' ? 'Tema claro' : 'Tema escuro'}
+          </TooltipContent>
+        </Tooltip>
         <Button variant="ghost" size="icon" className="relative shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>

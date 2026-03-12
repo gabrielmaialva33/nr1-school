@@ -29,6 +29,7 @@ import {
   PaginationItem,
 } from '@/components/ui/pagination'
 import { createPaginationMeta } from '@/lib/pagination'
+import { formatCpfMasked, formatDatePtBr, getNameInitials } from '@/lib/formatters'
 import {
   Select,
   SelectContent,
@@ -41,9 +42,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { CountingNumber } from '@/components/ui/counting-number'
 import {
   employeeStatusMeta,
-  formatCpf,
-  formatDate,
-  getInitials,
 } from './profile-utils'
 import {
   fetchEmployees,
@@ -333,7 +331,7 @@ export function EmployeesPage() {
                         <div className="flex items-center gap-3">
                           <Avatar className="size-8">
                             <AvatarFallback className="text-[10px]">
-                              {getInitials(employee.name)}
+                              {getNameInitials(employee.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="space-y-0.5">
@@ -343,14 +341,14 @@ export function EmployeesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="hidden font-medium md:table-cell">
-                        {formatCpf(employee.cpf)}
+                        {formatCpfMasked(employee.cpf)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{employee.role}</TableCell>
                       <TableCell className="hidden text-muted-foreground md:table-cell">
                         {employee.environment_name}
                       </TableCell>
                       <TableCell className="hidden text-muted-foreground md:table-cell">
-                        {formatDate(employee.admission_date)}
+                        {formatDatePtBr(employee.admission_date)}
                       </TableCell>
                       <TableCell>
                         <Tooltip>

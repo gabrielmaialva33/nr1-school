@@ -68,16 +68,6 @@ export const documentStatusMeta: Record<
   pending_validation: { label: 'Pendente', variant: 'secondary' },
 }
 
-export function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-}
-
 export function createEmptyUploadDraft(): UploadDocumentDraft {
   return {
     document_type: 'training_certificate',
@@ -89,38 +79,4 @@ export function createEmptyUploadDraft(): UploadDocumentDraft {
     notes: '',
     file: null,
   }
-}
-
-export function formatDate(value: string | null | undefined) {
-  if (!value) return 'Não informado'
-  return new Intl.DateTimeFormat('pt-BR').format(new Date(`${value}T00:00:00`))
-}
-
-export function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('pt-BR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-
-export function formatCpf(cpf: string) {
-  const lastDigits = cpf.slice(-5)
-  return `***.***.${lastDigits.slice(0, 3)}-${lastDigits.slice(3)}`
-}
-
-export function formatFileSize(file: File | null) {
-  if (!file) return 'Nenhum arquivo anexado'
-  if (file.size < 1024 * 1024) return `${Math.round(file.size / 1024)} KB`
-  return `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-}
-
-export function formatBytes(value: number) {
-  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`
-  return `${(value / (1024 * 1024)).toFixed(1)} MB`
-}
-
-export function addMonthsToDate(baseDate: string, months: number) {
-  const date = new Date(`${baseDate}T00:00:00`)
-  date.setMonth(date.getMonth() + months)
-  return date.toISOString().split('T')[0]
 }

@@ -11,6 +11,7 @@ import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/p
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { formatDatePtBr } from '@/lib/formatters'
 import { createPaginationMeta } from '@/lib/pagination'
 import {
   fetchComplaints,
@@ -291,7 +292,7 @@ export function ComplaintsPage() {
                         <TableCell className="font-medium">{complaint.protocol_number}</TableCell>
                         <TableCell>{getComplaintCategoryLabel(complaint.category)}</TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {new Date(complaint.created_at).toLocaleDateString('pt-BR')}
+                          {formatDatePtBr(complaint.created_at)}
                         </TableCell>
                         <TableCell>
                           <Tooltip>

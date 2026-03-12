@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { formatDatePtBr } from '@/lib/formatters'
 import { createPaginationMeta } from '@/lib/pagination'
 import { cn } from '@/lib/utils'
 import {
@@ -44,10 +45,6 @@ import {
 import type { PaginationMeta } from '@/types/api'
 type RiskTone = 'low' | 'medium' | 'high' | 'critical'
 type TypeFilter = 'all' | 'educational' | 'administrative' | 'food' | 'maintenance'
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('pt-BR').format(new Date(value))
-}
 
 function getEnvironmentTypeLabel(type: EnvironmentType) {
   const labels: Record<EnvironmentType, string> = {
@@ -366,7 +363,7 @@ export function EnvironmentsPage() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{getEnvironmentTypeLabel(environment.type)}</TableCell>
                       <TableCell className="hidden md:table-cell text-center font-medium">{environment.employee_count}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">{formatDate(environment.created_at)}</TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">{formatDatePtBr(environment.created_at)}</TableCell>
                       <TableCell>
                         <Badge className={cn('border-0', riskMeta[risk].className)}>{riskMeta[risk].label}</Badge>
                       </TableCell>
@@ -483,7 +480,7 @@ export function EnvironmentsPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Criado em</p>
-                    <p className="text-sm">{formatDate(selectedEnv.created_at)}</p>
+                    <p className="text-sm">{formatDatePtBr(selectedEnv.created_at)}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Nível de risco</p>

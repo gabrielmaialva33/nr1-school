@@ -52,16 +52,6 @@ export const employeeStatusMeta: Record<
   inactive: { label: 'Em férias', className: 'bg-slate-100 text-slate-700' },
 }
 
-export function getInitials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase()
-}
-
 export function createEmptyUploadDraft(): UploadDraft {
   return {
     employee_id: '',
@@ -76,10 +66,4 @@ export function createEmptyUploadDraft(): UploadDraft {
     notes: '',
     file: null,
   }
-}
-
-export function formatFileSize(file: File | null) {
-  if (!file) return 'Nenhum arquivo anexado'
-  if (file.size < 1024 * 1024) return `${Math.round(file.size / 1024)} KB`
-  return `${(file.size / (1024 * 1024)).toFixed(1)} MB`
 }

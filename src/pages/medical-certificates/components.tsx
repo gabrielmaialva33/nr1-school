@@ -1,6 +1,7 @@
 import type { ChangeEvent, Dispatch, ElementType, FormEvent, RefObject, SetStateAction } from 'react'
 import { AlertCircle, Brain, Check, HeartPulse, Printer, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatDatePtBr, formatOptionalFileSize, getNameInitials } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -40,14 +41,9 @@ import type { EmployeeOption, MedicalCertificate } from '@/services/medical-cert
 import {
   createEmptyUploadDraft,
   employeeStatusMeta,
-  formatFileSize,
   nexusRiskMeta,
   type UploadDraft,
 } from './helpers'
-
-function getDisplayDate(date: string) {
-  return new Date(date).toLocaleDateString('pt-BR')
-}
 
 export function MedicalCertificateStatCard({
   title,
@@ -108,7 +104,7 @@ export function MedicalCertificateDetailSheet({
                     Detalhes clínicos e ocupacionais do atestado, com foco em rastreabilidade e retorno ao trabalho.
                   </SheetDescription>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Atestado registrado em {getDisplayDate(certificate.created_at)}
+                    Atestado registrado em {formatDatePtBr(certificate.created_at)}
                   </p>
                 </div>
                 <Badge className={cn('shrink-0 border-0', nexusRiskMeta[certificate.nexus_risk]?.className)}>
@@ -140,11 +136,11 @@ export function MedicalCertificateDetailSheet({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">Data de Emissão</p>
-                  <p className="text-sm font-medium">{getDisplayDate(certificate.issue_date)}</p>
+                  <p className="text-sm font-medium">{formatDatePtBr(certificate.issue_date)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">Data de Retorno</p>
-                  <p className="text-sm font-medium">{getDisplayDate(certificate.return_date)}</p>
+                  <p className="text-sm font-medium">{formatDatePtBr(certificate.return_date)}</p>
                 </div>
               </div>
 
@@ -319,7 +315,7 @@ export function MedicalCertificateUploadDialog({
                       <p className="truncate text-sm font-medium">
                         {uploadDraft.file?.name || 'Nenhum arquivo selecionado'}
                       </p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(uploadDraft.file)}</p>
+                      <p className="text-xs text-muted-foreground">{formatOptionalFileSize(uploadDraft.file)}</p>
                     </div>
                     <Badge variant={uploadDraft.file ? 'success' : 'secondary'} appearance="light">
                       {uploadDraft.file ? 'Arquivo pronto' : 'Pendente'}
@@ -564,9 +560,7 @@ export function MedicalCertificateUploadDialog({
                     <div className="rounded-xl border p-3">
                       <p className="text-xs text-muted-foreground">Retorno</p>
                       <p className="text-sm font-medium">
-                        {uploadDraft.return_date
-                          ? new Date(`${uploadDraft.return_date}T00:00:00`).toLocaleDateString('pt-BR')
-                          : 'A definir'}
+                        {uploadDraft.return_date ? formatDatePtBr(uploadDraft.return_date) : 'A definir'}
                       </p>
                     </div>
                   </div>
@@ -718,13 +712,7 @@ export function MedicalCertificateHeaderIcon({
   return (
     <Avatar className="size-8">
       <AvatarFallback className="text-[10px]">
-        {name
-          .split(' ')
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((word) => word[0])
-          .join('')
-          .toUpperCase()}
+        {getNameInitials(name)}
       </AvatarFallback>
     </Avatar>
   )

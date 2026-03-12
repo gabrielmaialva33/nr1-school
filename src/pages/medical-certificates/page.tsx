@@ -22,6 +22,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { formatDatePtBr } from '@/lib/formatters'
 import { createPaginationMeta } from '@/lib/pagination'
 import {
   createMedicalCertificate,
@@ -457,7 +458,7 @@ export function MedicalCertificatesPage() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {new Date(certificate.issue_date).toLocaleDateString('pt-BR')}
+                          {formatDatePtBr(certificate.issue_date)}
                         </TableCell>
                         <TableCell>{certificate.icd_code}</TableCell>
                         <TableCell className="hidden text-center font-medium md:table-cell">
