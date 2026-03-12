@@ -38,18 +38,7 @@ import { CountingNumber } from '@/components/ui/counting-number'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-
-interface DashboardData {
-  school: { name: string; deadline_days: number }
-  kpis: Record<string, number>
-  charts: {
-    risk_distribution: Array<{ category: string; count: number; color: string }>
-    score_evolution: Array<{ month: string; score: number }>
-    certificate_trend: Array<{ month: string; total: number; mental_health: number }>
-    risks_by_environment: Array<{ name: string; count: number }>
-  }
-  alerts: Array<{ type: string; message: string; link: string }>
-}
+import { fetchDashboardData, type DashboardData } from '@/services/dashboard'
 
 function StatCard({
   title,
@@ -444,8 +433,7 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/dashboard')
-      .then(res => res.json())
+    fetchDashboardData()
       .then(setData)
       .catch(err => setError(err instanceof Error ? err.message : 'Erro ao carregar dados'))
   }, [])

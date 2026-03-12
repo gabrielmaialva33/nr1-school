@@ -6,20 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-
-interface Assessment {
-  id: string
-  name: string
-  period_start: string
-  period_end: string
-  sectors_count: number
-  responses_count: number
-  expected_responses: number
-  participation_rate: number
-  risk_level: 'low' | 'medium' | 'high' | 'critical'
-  status: 'active' | 'completed' | 'draft'
-  created_at: string
-}
+import { fetchAssessments, type Assessment } from '@/services/assessments'
 
 const riskMeta: Record<string, { label: string; className: string }> = {
   low: { label: 'Baixo', className: 'bg-emerald-100 text-emerald-700' },
@@ -308,9 +295,8 @@ export function AssessmentsPage() {
   const [isResultsOpen, setIsResultsOpen] = useState(false)
 
   useEffect(() => {
-    fetch('/api/assessments')
-      .then(res => res.json())
-      .then(res => setAssessments(res.data))
+    fetchAssessments()
+      .then(setAssessments)
       .catch(err => setError(err instanceof Error ? err.message : 'Erro ao carregar dados'))
       .finally(() => setIsLoading(false))
   }, [])

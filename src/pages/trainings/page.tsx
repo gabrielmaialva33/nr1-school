@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ElementType } from 'react'
 import { toast } from 'sonner'
 import { CalendarClock, Filter, GraduationCap, MoreVertical, Plus, Search, Users } from 'lucide-react'
-import { differenceInCalendarDays } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { CountingNumber } from '@/components/ui/counting-number'
@@ -35,33 +34,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-
-type TrainingStatus = 'completed' | 'scheduled' | 'in_progress'
-
-interface Training {
-  id: string
-  title: string
-  instructor: string
-  scheduled_date: string
-  duration_hours: number
-  validity_months: number
-  validity_date: string
-  attendees: number
-  status: TrainingStatus
-}
-
-interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-interface TrainingsResponse {
-  meta: PaginationMeta
-  data: Training[]
-}
+import {
+  fetchTrainings,
+  fetchTrainingStats,
+  type PaginationMeta,
+  type Training,
+  type TrainingStatus,
+} from '@/services/trainings'
 
 function StatCard({
   title,
@@ -121,49 +100,6 @@ const statusMeta: Record<TrainingStatus, { label: string; variant: 'success' | '
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR').format(new Date(value))
-}
-
-async function fetchTrainings(params: {
-  page: number
-  per_page: number
-  search: string
-  status: TrainingStatus | 'all'
-}) {
-  const query = new URLSearchParams({
-    page: String(params.page),
-    per_page: String(params.per_page),
-  })
-
-  if (params.search.trim()) query.set('search', params.search.trim())
-  if (params.status !== 'all') query.set('status', params.status)
-
-  const response = await fetch(`/api/trainings?${query.toString()}`)
-  if (!response.ok) throw new Error('Falha ao carregar treinamentos')
-  return response.json() as Promise<TrainingsResponse>
-}
-
-async function fetchTrainingStats() {
-  const response = await fetch('/api/trainings?page=1&per_page=100')
-  if (!response.ok) throw new Error('Falha ao carregar indicadores de treinamentos')
-
-  const payload: TrainingsResponse = await response.json()
-  const now = new Date()
-  const completed = payload.data.filter(training => training.status === 'completed')
-  const completedWithAttendees = completed.reduce((total, training) => total + training.attendees, 0)
-  const totalRelevantAttendees = payload.data
-    .filter(training => training.status !== 'scheduled')
-    .reduce((total, training) => total + training.attendees, 0)
-  const expiringSoon = completed.filter(training => {
-    const daysToExpire = differenceInCalendarDays(new Date(training.validity_date), now)
-    return daysToExpire >= 0 && daysToExpire < 30
-  }).length
-
-  return {
-    completed: completed.length,
-    attendance_rate: totalRelevantAttendees === 0 ? 0 : Math.round((completedWithAttendees / totalRelevantAttendees) * 100),
-    expiring_soon: expiringSoon,
-    impacted_employees: payload.data.reduce((total, training) => total + training.attendees, 0),
-  }
 }
 
 export function TrainingsPage() {

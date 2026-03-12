@@ -57,43 +57,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-
-type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
-type RiskStatus = 'identified' | 'treating' | 'controlled' | 'eliminated'
-
-interface Risk {
-  id: string
-  category: string
-  category_label: string
-  environment_name: string
-  probability: number
-  severity: number
-  risk_level: RiskLevel
-  status: RiskStatus
-  description: string
-  created_at: string
-}
-
-interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-interface RisksResponse {
-  data: Risk[]
-  meta: PaginationMeta
-}
-
-interface RiskFilters {
-  search: string
-  status: 'all' | RiskStatus
-  level: 'all' | RiskLevel
-  page: number
-  per_page: number
-}
+import {
+  fetchRisks,
+  fetchRiskStats,
+  type PaginationMeta,
+  type Risk,
+  type RiskFilters,
+  type RiskLevel,
+  type RiskStatus,
+} from '@/services/risks'
 
 const validRiskLevels = new Set<RiskFilters['level']>([
   'all',
@@ -199,36 +171,6 @@ const statusTabs: Array<{ value: RiskFilters['status']; label: string }> = [
   { value: 'controlled', label: 'Controlado' },
   { value: 'eliminated', label: 'Eliminado' },
 ]
-
-async function fetchRisks(filters: RiskFilters): Promise<RisksResponse> {
-  const params = new URLSearchParams({
-    page: String(filters.page),
-    per_page: String(filters.per_page),
-  })
-
-  if (filters.search.trim()) params.set('search', filters.search.trim())
-  if (filters.status !== 'all') params.set('status', filters.status)
-  if (filters.level !== 'all') params.set('level', filters.level)
-
-  const response = await fetch(`/api/risks?${params.toString()}`)
-  if (!response.ok) throw new Error('Falha ao carregar inventário de riscos')
-  return response.json()
-}
-
-async function fetchRiskStats() {
-  const response = await fetch('/api/risks?page=1&per_page=200')
-  if (!response.ok) throw new Error('Falha ao carregar indicadores de riscos')
-
-  const payload: RisksResponse = await response.json()
-  const allRisks = payload.data
-
-  return {
-    total: payload.meta.total,
-    critical: allRisks.filter((r) => r.risk_level === 'critical').length,
-    treating: allRisks.filter((r) => r.status === 'treating').length,
-    controlled: allRisks.filter((r) => r.status === 'controlled').length,
-  }
-}
 
 export function RisksPage() {
   const [searchParams] = useSearchParams()

@@ -35,19 +35,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
-
-type EnvironmentType = 'educational' | 'administrative' | 'food' | 'maintenance' | 'recreation' | 'security'
+import {
+  fetchEnvironments,
+  type Environment,
+  type EnvironmentType,
+} from '@/services/environments'
 type RiskTone = 'low' | 'medium' | 'high' | 'critical'
 type TypeFilter = 'all' | 'educational' | 'administrative' | 'food' | 'maintenance'
-
-interface Environment {
-  id: string
-  name: string
-  type: EnvironmentType
-  employee_count: number
-  description: string
-  created_at: string
-}
 
 interface PaginationMeta {
   total: number
@@ -144,14 +138,6 @@ const typeFilterLabels: Record<TypeFilter, string> = {
   administrative: 'Administrativo',
   food: 'Alimentação',
   maintenance: 'Operacional',
-}
-
-async function fetchEnvironments() {
-  const response = await fetch('/api/environments')
-  if (!response.ok) throw new Error('Falha ao carregar setores')
-
-  const payload: { data: Environment[] } = await response.json()
-  return payload.data
 }
 
 export function EnvironmentsPage() {

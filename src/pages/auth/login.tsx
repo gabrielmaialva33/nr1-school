@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Shield, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { loginWithPassword } from '@/services/auth'
 
 const DEADLINE = new Date('2026-05-26T00:00:00-03:00').getTime()
 
@@ -47,11 +48,7 @@ export function LoginPage() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
+      const res = await loginWithPassword({ email, password })
 
       if (!res.ok) {
         const data = await res.json()

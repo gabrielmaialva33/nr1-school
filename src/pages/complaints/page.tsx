@@ -72,42 +72,18 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import {
+  fetchComplaints,
+  fetchComplaintStats,
+  type Complaint,
+  type ComplaintFilters,
+  type ComplaintStatus,
+  type PaginationMeta,
+} from '@/services/complaints'
 
-interface Complaint {
-  id: string
-  school_id: string
-  protocol_number: string
-  category: string
-  sector_reported: string
-  description: string
-  is_anonymous: boolean
-  status:
-    | 'received'
-    | 'under_review'
-    | 'investigating'
-    | 'resolved'
-    | 'dismissed'
-  resolution_description: string | null
-  assigned_to: string
-  created_at: string
-}
-
-interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-interface ComplaintsResponse {
-  data: Complaint[]
-  meta: PaginationMeta
-}
-
-interface Filters {
+interface Filters extends ComplaintFilters {
   search: string
-  status: Complaint['status'] | 'all'
+  status: ComplaintStatus | 'all'
   page: number
   per_page: number
 }
@@ -236,39 +212,6 @@ function getPriority(category: string) {
     label: 'Média',
     description: 'Prioridade média - acompanhar normalmente',
     className: 'bg-yellow-100 text-yellow-700',
-  }
-}
-
-async function fetchComplaints(filters: Filters): Promise<ComplaintsResponse> {
-  const params = new URLSearchParams({
-    page: String(filters.page),
-    per_page: String(filters.per_page),
-  })
-  if (filters.search.trim()) params.set('search', filters.search.trim())
-  if (filters.status !== 'all') params.set('status', filters.status)
-
-  const response = await fetch(`/api/complaints?${params.toString()}`)
-  if (!response.ok) throw new Error('Falha ao carregar canal de denúncias')
-  return response.json()
-}
-
-async function fetchComplaintStats() {
-  const response = await fetch('/api/complaints?page=1&per_page=1000')
-  if (!response.ok) throw new Error('Falha ao carregar indicadores')
-  const payload: ComplaintsResponse = await response.json()
-  const all = payload.data
-
-  const reviewingCount = all.filter(
-    (c) => c.status === 'under_review' || c.status === 'investigating',
-  ).length
-  const resolvedCount = all.filter((c) => c.status === 'resolved').length
-  const anonymousCount = all.filter((c) => c.is_anonymous).length
-
-  return {
-    total: payload.meta.total,
-    reviewing: reviewingCount,
-    resolved: resolvedCount,
-    anonymous: anonymousCount,
   }
 }
 

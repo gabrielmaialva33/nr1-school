@@ -46,21 +46,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-
-type PlanStatus = 'pending' | 'in_progress' | 'completed' | 'verified' | 'overdue'
-
-interface ActionPlan {
-  id: string
-  risk_id: string
-  school_id: string
-  title: string
-  description: string
-  action_type: 'preventive' | 'corrective' | 'monitoring'
-  responsible_name: string
-  deadline: string
-  status: PlanStatus
-  created_at: string
-}
+import {
+  fetchActionPlans,
+  type ActionPlan,
+  type PlanStatus,
+} from '@/services/action-plans'
 
 const columnConfig: Array<{
   status: PlanStatus[]
@@ -261,14 +251,10 @@ export function ActionPlansPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   useEffect(() => {
-    const query = new URLSearchParams()
-    if (statusFilter !== 'all') query.set('status', statusFilter)
-
     setIsLoading(true)
     setError(null)
 
-    fetch(`/api/action-plans${query.toString() ? `?${query.toString()}` : ''}`)
-      .then(res => res.json())
+    fetchActionPlans(statusFilter)
       .then(res => setPlans(res.data))
       .catch(err => setError(err instanceof Error ? err.message : 'Erro ao carregar dados'))
       .finally(() => setIsLoading(false))

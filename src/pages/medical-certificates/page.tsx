@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { toast } from 'sonner'
 import {
   AlertCircle,
@@ -49,6 +49,7 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -61,6 +62,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
@@ -68,42 +70,39 @@ import { CountingNumber } from '@/components/ui/counting-number'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardFooter, CardHeader, CardTitle, CardToolbar } from '@/components/ui/card'
+import {
+  fetchCertificateStats,
+  fetchCertificates,
+  fetchEmployeesLookup,
+  type EmployeeOption,
+  type MedicalCertificate,
+  type MedicalCertificateFilters,
+  type PaginationMeta,
+} from '@/services/medical-certificates'
 
-interface MedicalCertificate {
-  id: string
-  employee_id: string
-  employee_name: string
-  school_id: string
-  issue_date: string
-  days_off: number
-  icd_code: string
-  is_mental_health: boolean
-  doctor_name: string
-  return_date: string
-  inss_referral: boolean
-  nexus_risk: 'low' | 'medium' | 'high' | 'none'
-  created_at: string
-}
-
-interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-interface MedicalCertificatesResponse {
-  data: MedicalCertificate[]
-  meta: PaginationMeta
-}
-
-interface Filters {
+interface Filters extends MedicalCertificateFilters {
   search: string
   page: number
   per_page: number
   nexus_risk: string
 }
+
+interface UploadDraft {
+  employee_id: string
+  issue_date: string
+  return_date: string
+  days_off: string
+  icd_code: string
+  doctor_name: string
+  nexus_risk: 'low' | 'medium' | 'high' | 'none'
+  is_mental_health: boolean
+  inss_referral: boolean
+  notes: string
+  file: File | null
+}
+
+const MAX_UPLOAD_FILE_SIZE = 10 * 1024 * 1024
+const ACCEPTED_UPLOAD_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg']
 
 function getInitials(name: string) {
   return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -180,42 +179,32 @@ const nexusRiskMeta: Record<string, { label: string; description: string; classN
   none: { label: '\u2014', description: 'Sem relação com ambiente de trabalho', className: 'bg-secondary/50 text-muted-foreground' },
 }
 
-async function fetchCertificates(
-  filters: Filters,
-): Promise<MedicalCertificatesResponse> {
-  const params = new URLSearchParams({
-    page: String(filters.page),
-    per_page: String(filters.per_page),
-  })
-  if (filters.search.trim()) params.set('search', filters.search.trim())
-  if (filters.nexus_risk !== 'all') params.set('nexus_risk', filters.nexus_risk)
-
-  const response = await fetch(
-    `/api/medical-certificates?${params.toString()}`,
-  )
-  if (!response.ok) throw new Error('Falha ao carregar atestados médicos')
-  return response.json()
+const employeeStatusMeta: Record<EmployeeOption['status'], { label: string; className: string }> = {
+  active: { label: 'Ativo', className: 'bg-green-100 text-green-700' },
+  on_leave: { label: 'Afastado', className: 'bg-yellow-100 text-yellow-700' },
+  inactive: { label: 'Em férias', className: 'bg-slate-100 text-slate-700' },
 }
 
-async function fetchCertificateStats() {
-  const response = await fetch(
-    '/api/medical-certificates?page=1&per_page=1000',
-  )
-  if (!response.ok) throw new Error('Falha ao carregar indicadores')
-  const payload: MedicalCertificatesResponse = await response.json()
-  const all = payload.data
-
-  const mentalHealthCount = all.filter((mc) => mc.is_mental_health).length
-  const highNexusCount = all.filter((mc) => mc.nexus_risk === 'high').length
-  const totalDays = all.reduce((acc, mc) => acc + mc.days_off, 0)
-  const avgDays = all.length > 0 ? (totalDays / all.length).toFixed(1) : '0'
-
+function createEmptyUploadDraft(): UploadDraft {
   return {
-    total: payload.meta.total,
-    mentalHealth: mentalHealthCount,
-    highNexus: highNexusCount,
-    avgDays,
+    employee_id: '',
+    issue_date: '',
+    return_date: '',
+    days_off: '7',
+    icd_code: '',
+    doctor_name: '',
+    nexus_risk: 'medium',
+    is_mental_health: false,
+    inss_referral: false,
+    notes: '',
+    file: null,
   }
+}
+
+function formatFileSize(file: File | null) {
+  if (!file) return 'Nenhum arquivo anexado'
+  if (file.size < 1024 * 1024) return `${Math.round(file.size / 1024)} KB`
+  return `${(file.size / (1024 * 1024)).toFixed(1)} MB`
 }
 
 export function MedicalCertificatesPage() {
@@ -244,6 +233,9 @@ export function MedicalCertificatesPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedCertificate, setSelectedCertificate] = useState<MedicalCertificate | null>(null)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [employeeOptions, setEmployeeOptions] = useState<EmployeeOption[]>([])
+  const [uploadDraft, setUploadDraft] = useState<UploadDraft>(createEmptyUploadDraft)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -293,6 +285,44 @@ export function MedicalCertificatesPage() {
     }
   }, [])
 
+  useEffect(() => {
+    let active = true
+
+    fetchEmployeesLookup()
+      .then((data) => {
+        if (!active) return
+        setEmployeeOptions(data)
+      })
+      .catch(() => {
+        if (!active) return
+        toast.error('Não foi possível carregar a lista de colaboradores')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isUploadOpen) return
+    setUploadDraft(createEmptyUploadDraft())
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [isUploadOpen])
+
+  useEffect(() => {
+    if (!uploadDraft.issue_date) return
+    const daysOff = Number(uploadDraft.days_off || '0')
+    if (Number.isNaN(daysOff) || daysOff <= 0) return
+
+    const issueDate = new Date(`${uploadDraft.issue_date}T00:00:00`)
+    issueDate.setDate(issueDate.getDate() + daysOff)
+
+    setUploadDraft((current) => ({
+      ...current,
+      return_date: issueDate.toISOString().split('T')[0],
+    }))
+  }, [uploadDraft.issue_date, uploadDraft.days_off])
+
   const paginationItems = useMemo(() => {
     return Array.from({ length: meta.last_page || 1 }, (_, index) => index + 1)
   }, [meta.last_page])
@@ -307,6 +337,55 @@ export function MedicalCertificatesPage() {
   }, [certificates])
 
   const hasActiveFilters = filters.search.trim() !== '' || filters.nexus_risk !== 'all'
+  const selectedUploadEmployee = employeeOptions.find((employee) => employee.id === uploadDraft.employee_id)
+  const uploadAlerts = [
+    uploadDraft.is_mental_health ? 'CID relacionado a saúde mental' : null,
+    uploadDraft.nexus_risk === 'high' ? 'Encaminhar para análise de nexo ocupacional' : null,
+    Number(uploadDraft.days_off || '0') >= 15 ? 'Afastamento prolongado exige acompanhamento' : null,
+    uploadDraft.inss_referral ? 'Fluxo com INSS indicado no cadastro' : null,
+  ].filter(Boolean)
+  const isUploadReady =
+    Boolean(uploadDraft.file) &&
+    Boolean(selectedUploadEmployee) &&
+    uploadDraft.doctor_name.trim() !== '' &&
+    uploadDraft.issue_date !== '' &&
+    uploadDraft.return_date !== '' &&
+    uploadDraft.icd_code.trim() !== ''
+
+  const openUploadFilePicker = () => {
+    fileInputRef.current?.click()
+  }
+
+  const clearSelectedUploadFile = () => {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    setUploadDraft((current) => ({ ...current, file: null }))
+  }
+
+  const handleUploadFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null
+
+    if (!file) {
+      setUploadDraft((current) => ({ ...current, file: null }))
+      return
+    }
+
+    const hasSupportedMimeType = ACCEPTED_UPLOAD_FILE_TYPES.includes(file.type)
+    const hasSupportedExtension = /\.(pdf|png|jpe?g)$/i.test(file.name)
+
+    if (!hasSupportedMimeType && !hasSupportedExtension) {
+      toast.error('Formato inválido. Envie PDF, JPG ou PNG.')
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > MAX_UPLOAD_FILE_SIZE) {
+      toast.error('Arquivo acima de 10 MB. Reduza o tamanho antes do upload.')
+      event.target.value = ''
+      return
+    }
+
+    setUploadDraft((current) => ({ ...current, file }))
+  }
 
   return (
     <div className="space-y-6">
@@ -823,51 +902,410 @@ export function MedicalCertificatesPage() {
 
       {/* Upload Certificate Dialog */}
       <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Registrar Atestado Médico</DialogTitle>
+            <DialogDescription>
+              Faça o upload do arquivo e complete os metadados para manter a rastreabilidade do caso.
+            </DialogDescription>
           </DialogHeader>
           <DialogBody>
             <form
               id="upload-certificate-form"
-              className="space-y-4"
+              className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]"
               onSubmit={(e) => {
                 e.preventDefault()
-                toast.success('Atestado registrado com sucesso')
+                if (!uploadDraft.file) {
+                  toast.error('Anexe o arquivo do atestado antes de registrar')
+                  return
+                }
+
+                if (!selectedUploadEmployee) {
+                  toast.error('Selecione o colaborador para continuar')
+                  return
+                }
+
+                toast.success(`Atestado de ${selectedUploadEmployee.name} registrado com sucesso`)
                 setIsUploadOpen(false)
               }}
             >
-              <div className="space-y-2">
-                <Label htmlFor="cert-employee">Nome do funcionário</Label>
-                <Input id="cert-employee" placeholder="Nome completo" required />
+              <div className="space-y-5">
+                <div className="rounded-2xl border border-dashed border-orange-300 bg-orange-50/50 p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                      <div className="inline-flex size-11 items-center justify-center rounded-2xl bg-orange-600/10 text-orange-700">
+                        <Upload className="size-5" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Arquivo do atestado</p>
+                        <p className="text-sm text-muted-foreground">
+                          Aceite PDF, JPG ou PNG com até 10 MB. O upload fica vinculado ao histórico do colaborador.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2"
+                        onClick={openUploadFilePicker}
+                      >
+                        <Upload className="size-4" />
+                        {uploadDraft.file ? 'Trocar arquivo' : 'Selecionar arquivo'}
+                      </Button>
+                      {uploadDraft.file && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="gap-2 text-muted-foreground"
+                          onClick={clearSelectedUploadFile}
+                        >
+                          <X className="size-4" />
+                          Remover
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    className="hidden"
+                    onChange={handleUploadFileChange}
+                  />
+
+                  <div className="mt-4 rounded-xl border bg-background p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {uploadDraft.file?.name || 'Nenhum arquivo selecionado'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(uploadDraft.file)}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={uploadDraft.file ? 'success' : 'secondary'}
+                        appearance="light"
+                      >
+                        {uploadDraft.file ? 'Arquivo pronto' : 'Pendente'}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="secondary" appearance="light">PDF, JPG ou PNG</Badge>
+                      <Badge variant="secondary" appearance="light">Até 10 MB</Badge>
+                      <Badge
+                        variant={selectedUploadEmployee ? 'success' : 'secondary'}
+                        appearance="light"
+                      >
+                        {selectedUploadEmployee ? 'Colaborador vinculado' : 'Vincular colaborador'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Colaborador</Label>
+                    <Select
+                      value={uploadDraft.employee_id}
+                      onValueChange={(value) =>
+                        setUploadDraft((current) => ({ ...current, employee_id: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um colaborador" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employeeOptions.map((employee) => (
+                          <SelectItem key={employee.id} value={employee.id}>
+                            {employee.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cert-doctor">Médico responsável</Label>
+                    <Input
+                      id="cert-doctor"
+                      value={uploadDraft.doctor_name}
+                      onChange={(event) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          doctor_name: event.target.value,
+                        }))
+                      }
+                      placeholder="Dr(a). Nome"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {selectedUploadEmployee && (
+                  <div className="grid gap-3 rounded-xl border bg-card p-4 md:grid-cols-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Cargo</p>
+                      <p className="text-sm font-medium">{selectedUploadEmployee.role}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Setor</p>
+                      <p className="text-sm font-medium">{selectedUploadEmployee.environment_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Situação</p>
+                      <Badge className={cn('mt-1 border-0', employeeStatusMeta[selectedUploadEmployee.status].className)}>
+                        {employeeStatusMeta[selectedUploadEmployee.status].label}
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="cert-issue-date">Data de emissão</Label>
+                    <Input
+                      id="cert-issue-date"
+                      type="date"
+                      value={uploadDraft.issue_date}
+                      onChange={(event) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          issue_date: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cert-days-off">Dias de afastamento</Label>
+                    <Input
+                      id="cert-days-off"
+                      type="number"
+                      min="1"
+                      max="180"
+                      value={uploadDraft.days_off}
+                      onChange={(event) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          days_off: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="cert-return-date">Retorno previsto</Label>
+                    <Input
+                      id="cert-return-date"
+                      type="date"
+                      value={uploadDraft.return_date}
+                      onChange={(event) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          return_date: event.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cert-cid">CID</Label>
+                    <Input
+                      id="cert-cid"
+                      value={uploadDraft.icd_code}
+                      onChange={(event) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          icd_code: event.target.value.toUpperCase(),
+                        }))
+                      }
+                      placeholder="Ex: F32.1"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Risco de nexo</Label>
+                    <Select
+                      value={uploadDraft.nexus_risk}
+                      onValueChange={(value: UploadDraft['nexus_risk']) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          nexus_risk: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">Alto</SelectItem>
+                        <SelectItem value="medium">Médio</SelectItem>
+                        <SelectItem value="low">Baixo</SelectItem>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 rounded-xl border bg-muted/20 p-4 md:grid-cols-2">
+                  <label className="flex items-start gap-3">
+                    <Checkbox
+                      checked={uploadDraft.is_mental_health}
+                      onCheckedChange={(checked) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          is_mental_health: Boolean(checked),
+                        }))
+                      }
+                    />
+                    <div>
+                      <p className="text-sm font-medium">Relaciona-se à saúde mental</p>
+                      <p className="text-xs text-muted-foreground">Use para CID do grupo F ou casos com impacto psicossocial.</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3">
+                    <Checkbox
+                      checked={uploadDraft.inss_referral}
+                      onCheckedChange={(checked) =>
+                        setUploadDraft((current) => ({
+                          ...current,
+                          inss_referral: Boolean(checked),
+                        }))
+                      }
+                    />
+                    <div>
+                      <p className="text-sm font-medium">Encaminhamento ao INSS</p>
+                      <p className="text-xs text-muted-foreground">Marque quando o caso exigir fluxo previdenciário.</p>
+                    </div>
+                  </label>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="cert-notes">Observações</Label>
+                  <Textarea
+                    id="cert-notes"
+                    value={uploadDraft.notes}
+                    onChange={(event) =>
+                      setUploadDraft((current) => ({
+                        ...current,
+                        notes: event.target.value,
+                      }))
+                    }
+                    placeholder="Ex.: colaborador relatou agravamento após episódio crítico no setor."
+                    rows={4}
+                  />
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cert-cid">CID</Label>
-                  <Input id="cert-cid" placeholder="Ex: F32.1" required />
+
+              <div className="space-y-4">
+                <div className="rounded-2xl border bg-card p-5">
+                  <p className="text-sm font-semibold">Resumo do registro</p>
+                  <div className="mt-4 space-y-4">
+                    <div className="rounded-xl bg-muted/30 p-4">
+                      <p className="text-xs text-muted-foreground">Colaborador</p>
+                      <p className="mt-1 text-sm font-medium">
+                        {selectedUploadEmployee?.name || 'Selecione um colaborador'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedUploadEmployee
+                          ? `${selectedUploadEmployee.role} • ${selectedUploadEmployee.environment_name}`
+                          : 'O histórico ficará vinculado ao prontuário ocupacional'}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="rounded-xl border p-3">
+                        <p className="text-xs text-muted-foreground">Afastamento</p>
+                        <p className="text-lg font-semibold">{uploadDraft.days_off || '0'} dias</p>
+                      </div>
+                      <div className="rounded-xl border p-3">
+                        <p className="text-xs text-muted-foreground">Retorno</p>
+                        <p className="text-sm font-medium">
+                          {uploadDraft.return_date
+                            ? new Date(`${uploadDraft.return_date}T00:00:00`).toLocaleDateString('pt-BR')
+                            : 'A definir'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border p-4">
+                      <p className="text-xs text-muted-foreground">Classificação inicial</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <Badge className={cn('border-0', nexusRiskMeta[uploadDraft.nexus_risk].className)}>
+                          Nexo {nexusRiskMeta[uploadDraft.nexus_risk].label}
+                        </Badge>
+                        <Badge
+                          variant={uploadDraft.is_mental_health ? 'destructive' : 'secondary'}
+                          appearance="light"
+                        >
+                          {uploadDraft.is_mental_health ? 'Saúde mental' : 'Clínico geral'}
+                        </Badge>
+                        {uploadDraft.inss_referral && (
+                          <Badge variant="warning" appearance="light">INSS</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border p-4">
+                      <p className="text-xs text-muted-foreground">Alertas automáticos</p>
+                      <div className="mt-3 space-y-2">
+                        {uploadAlerts.length > 0 ? (
+                          uploadAlerts.map((alert) => (
+                            <div key={alert} className="flex items-start gap-2 text-sm">
+                              <AlertCircle className="mt-0.5 size-4 text-orange-600" />
+                              <span>{alert}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground">
+                            Complete os campos para gerar alertas de acompanhamento.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border p-4">
+                      <p className="text-xs text-muted-foreground">Checklist do cadastro</p>
+                      <div className="mt-3 space-y-2 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Arquivo anexado</span>
+                          <Badge variant={uploadDraft.file ? 'success' : 'secondary'} appearance="light">
+                            {uploadDraft.file ? 'OK' : 'Pendente'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Colaborador identificado</span>
+                          <Badge variant={selectedUploadEmployee ? 'success' : 'secondary'} appearance="light">
+                            {selectedUploadEmployee ? 'OK' : 'Pendente'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Dados clínicos mínimos</span>
+                          <Badge
+                            variant={
+                              uploadDraft.doctor_name.trim() && uploadDraft.issue_date && uploadDraft.icd_code.trim()
+                                ? 'success'
+                                : 'secondary'
+                            }
+                            appearance="light"
+                          >
+                            {uploadDraft.doctor_name.trim() && uploadDraft.issue_date && uploadDraft.icd_code.trim()
+                              ? 'OK'
+                              : 'Pendente'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cert-doctor">Médico responsável</Label>
-                  <Input id="cert-doctor" placeholder="Dr(a). Nome" required />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cert-start">Data de início</Label>
-                  <Input id="cert-start" type="date" required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cert-end">Data de término</Label>
-                  <Input id="cert-end" type="date" required />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cert-notes">Observações</Label>
-                <Textarea
-                  id="cert-notes"
-                  placeholder="Informações adicionais sobre o atestado..."
-                  rows={3}
-                />
               </div>
             </form>
           </DialogBody>
@@ -880,6 +1318,7 @@ export function MedicalCertificatesPage() {
               form="upload-certificate-form"
               variant="solid"
               className="bg-orange-600 text-white hover:bg-orange-700"
+              disabled={!isUploadReady}
             >
               Registrar Atestado
             </Button>
