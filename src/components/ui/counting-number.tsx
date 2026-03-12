@@ -23,7 +23,7 @@ export function CountingNumber({
   duration = 2,
   delay = 0,
   className,
-  startOnView = true,
+  startOnView = false,
   once = false,
   inViewMargin,
   onComplete,
@@ -40,6 +40,12 @@ export function CountingNumber({
   const shouldStart = !startOnView || (isInView && (!once || !hasAnimated));
 
   useEffect(() => {
+    if (!startOnView) {
+      motionValue.set(to);
+      setDisplay(to);
+      onComplete?.();
+      return;
+    }
     if (!shouldStart) return;
     setHasAnimated(true);
     const timeout = setTimeout(() => {

@@ -21,8 +21,23 @@ import {
 import { SidebarMenu, SystemSidebarMenu } from './sidebar-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Shield } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useLocation, Link } from 'react-router-dom';
+
+const routeLabels: Record<string, string> = {
+  '': 'Dashboard',
+  environments: 'Setores',
+  employees: 'Funcionários',
+  assessments: 'Campanhas COPSOQ',
+  results: 'Resultado COPSOQ',
+  risks: 'Inventário de Riscos',
+  'action-plans': 'Planos de Ação',
+  'medical-certificates': 'Atestados Médicos',
+  trainings: 'Treinamentos',
+  complaints: 'Denúncias',
+  reports: 'Relatórios',
+  users: 'Gestão de Usuários',
+  settings: 'Configurações',
+};
 
 export function Header({
   isSidebarCollapsed,
@@ -35,13 +50,15 @@ export function Header({
   const location = useLocation();
 
   const pathnames = location.pathname.split('/').filter((x) => x);
+  const currentPath = pathnames[pathnames.length - 1] ?? '';
+  const currentLabel = routeLabels[currentPath] ?? currentPath.replace(/-/g, ' ');
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-background px-4 md:px-6">
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-border/70 bg-background/85 px-4 backdrop-blur-xl md:px-6">
       <div className="flex items-center gap-2 lg:hidden">
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="shrink-0 lg:hidden">
+            <Button variant="ghost" size="icon" className="shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground lg:hidden">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
@@ -54,9 +71,9 @@ export function Header({
               </SheetTitle>
             </SheetHeader>
             <SheetBody className="flex flex-col flex-1 p-0 overflow-y-auto overflow-x-hidden">
-              <SidebarMenu />
+              <SidebarMenu onNavigate={() => setIsMobileOpen(false)} />
               <div className="mt-auto">
-                <SystemSidebarMenu />
+                <SystemSidebarMenu onNavigate={() => setIsMobileOpen(false)} />
               </div>
             </SheetBody>
           </SheetContent>
@@ -71,7 +88,7 @@ export function Header({
       <Button
         variant="ghost"
         size="icon"
-        className="hidden lg:flex shrink-0 -ml-2 mr-2"
+        className=" -ml-2 mr-2 hidden shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground lg:flex"
         onClick={toggleSidebar}
       >
         <Menu className="h-5 w-5 text-muted-foreground" />
@@ -90,9 +107,7 @@ export function Header({
               <>
                 <BreadcrumbSeparator />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="capitalize">
-                    {pathnames[pathnames.length - 1].replace('-', ' ')}
-                  </BreadcrumbPage>
+                  <BreadcrumbPage>{currentLabel}</BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             )}
@@ -103,11 +118,11 @@ export function Header({
       <div className="flex flex-1 sm:hidden"></div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="icon" className="shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground">
           <Search className="h-5 w-5" />
           <span className="sr-only">Search</span>
         </Button>
-        <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-foreground relative">
+        <Button variant="ghost" size="icon" className="relative shrink-0 rounded-xl text-muted-foreground hover:bg-muted/80 hover:text-foreground">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive"></span>
           <span className="sr-only">Notifications</span>
@@ -115,7 +130,7 @@ export function Header({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full ml-1">
+            <Button variant="ghost" className="relative ml-1 h-9 w-9 rounded-full ring-1 ring-border/70 transition-shadow hover:shadow-sm">
               <Avatar className="h-8 w-8">
                 <AvatarImage src="/media/avatars/300-1.png" alt="@user" />
                 <AvatarFallback>NR</AvatarFallback>

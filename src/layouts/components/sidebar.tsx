@@ -6,12 +6,12 @@ export function Sidebar({ isCollapsed = false }: { isCollapsed?: boolean }) {
   return (
     <aside
       className={cn(
-        'fixed top-0 bottom-0 left-0 z-20 flex-col items-stretch shrink-0 bg-[var(--sidebar)] text-[var(--sidebar-foreground)] border-r border-[var(--sidebar-muted)] transition-all duration-300',
+        'fixed top-0 bottom-0 left-0 z-20 flex-col items-stretch shrink-0 border-r border-white/10 bg-[linear-gradient(180deg,#0f172a_0%,#091225_52%,#050d1c_100%)] text-[var(--sidebar-foreground)] shadow-[0_20px_60px_rgba(2,6,23,0.35)] transition-all duration-300',
         isCollapsed ? 'w-20' : 'w-64',
         'hidden lg:flex'
       )}
     >
-      <div className="flex items-center justify-center h-16 shrink-0 border-b border-[var(--sidebar-muted)] px-4">
+      <div className="flex h-16 shrink-0 items-center justify-center border-b border-white/10 bg-white/[0.02] px-4 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <Shield className="size-8 text-[var(--sidebar-accent)] shrink-0" />
           {!isCollapsed && <span className="text-xl font-bold tracking-tight text-white whitespace-nowrap overflow-hidden text-ellipsis">NR1 School</span>}

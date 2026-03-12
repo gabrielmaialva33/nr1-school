@@ -65,6 +65,8 @@
   --input: #e2e8f0;
   --ring: #f97316;
   --radius: 0.5rem;
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 30px rgba(15, 23, 42, 0.06);
+  --shadow-hover: 0 8px 20px rgba(15, 23, 42, 0.08), 0 22px 48px rgba(15, 23, 42, 0.12);
 }
 
 .dark {
@@ -107,6 +109,8 @@
   --border: #334155;
   --input: #334155;
   --ring: #fb923c;
+  --shadow-soft: 0 1px 2px rgba(2, 6, 23, 0.25), 0 12px 30px rgba(2, 6, 23, 0.32);
+  --shadow-hover: 0 10px 24px rgba(2, 6, 23, 0.34), 0 24px 56px rgba(2, 6, 23, 0.42);
 }
 
 /** Theme Setup **/
@@ -177,12 +181,45 @@
       transform: translateY(calc(-100% - var(--gap)));
     }
   }
+
+  --animate-enter-up: enter-up 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade-in: fade-in 320ms ease-out both;
+
+  @keyframes enter-up {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 /** Global Styles **/
 @layer base {
   * {
     @apply border-border;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 6%, transparent), transparent 26%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-muted) 42%, transparent), transparent 18%),
+      var(--color-background);
+    color: var(--color-foreground);
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
 
   *:focus-visible {
@@ -224,6 +261,60 @@ html {
 
 @utility container-fluid {
   @apply w-full mx-auto px-4 lg:px-5;
+}
+
+@layer components {
+  .page-shell {
+    animation: var(--animate-fade-in);
+  }
+
+  .page-stagger > * {
+    animation: var(--animate-enter-up);
+  }
+
+  .page-stagger > *:nth-child(2) {
+    animation-delay: 60ms;
+  }
+
+  .page-stagger > *:nth-child(3) {
+    animation-delay: 120ms;
+  }
+
+  .page-stagger > *:nth-child(4) {
+    animation-delay: 180ms;
+  }
+
+  .surface-card {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .surface-interactive {
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease,
+      border-color 220ms ease,
+      background-color 220ms ease;
+  }
+
+  .surface-interactive:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .page-shell,
+  .page-stagger > * {
+    animation: none !important;
+  }
+
+  .surface-interactive {
+    transition: none !important;
+  }
 }
 
 /* Metronic Configs */
