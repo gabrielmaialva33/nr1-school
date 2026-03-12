@@ -34,22 +34,16 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { createPaginationMeta } from '@/lib/pagination'
 import { cn } from '@/lib/utils'
 import {
   fetchEnvironments,
   type Environment,
   type EnvironmentType,
 } from '@/services/environments'
+import type { PaginationMeta } from '@/types/api'
 type RiskTone = 'low' | 'medium' | 'high' | 'critical'
 type TypeFilter = 'all' | 'educational' | 'administrative' | 'food' | 'maintenance'
-
-interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('pt-BR').format(new Date(value))
@@ -201,15 +195,7 @@ export function EnvironmentsPage() {
   }, [environments, search, typeFilter])
 
   const meta = useMemo<PaginationMeta>(() => {
-    const total = filteredEnvironments.length
-    const lastPage = Math.max(1, Math.ceil(total / perPage))
-    return {
-      total,
-      current_page: Math.min(page, lastPage),
-      per_page: perPage,
-      last_page: lastPage,
-      first_page: 1,
-    }
+    return createPaginationMeta(filteredEnvironments.length, page, perPage)
   }, [filteredEnvironments.length, page])
 
   const currentData = useMemo(() => {

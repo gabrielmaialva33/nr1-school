@@ -1,5 +1,7 @@
 import { differenceInCalendarDays } from 'date-fns'
 import { apiJson } from '@/lib/api-client'
+import type { PaginatedResponse } from '@/types/api'
+export type { PaginationMeta } from '@/types/api'
 
 export type TrainingStatus = 'completed' | 'scheduled' | 'in_progress'
 
@@ -15,18 +17,7 @@ export interface Training {
   status: TrainingStatus
 }
 
-export interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-export interface TrainingsResponse {
-  meta: PaginationMeta
-  data: Training[]
-}
+export type TrainingsResponse = PaginatedResponse<Training>
 
 export async function fetchTrainings(params: {
   page: number

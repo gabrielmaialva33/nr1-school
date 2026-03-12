@@ -1,4 +1,6 @@
 import { apiJson } from '@/lib/api-client'
+import type { PaginatedResponse } from '@/types/api'
+export type { PaginationMeta } from '@/types/api'
 
 export interface MedicalCertificate {
   id: string
@@ -16,18 +18,7 @@ export interface MedicalCertificate {
   created_at: string
 }
 
-export interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-export interface MedicalCertificatesResponse {
-  data: MedicalCertificate[]
-  meta: PaginationMeta
-}
+export type MedicalCertificatesResponse = PaginatedResponse<MedicalCertificate>
 
 export interface MedicalCertificateFilters {
   search: string
@@ -79,4 +70,30 @@ export async function fetchCertificateStats() {
 export async function fetchEmployeesLookup() {
   const payload = await apiJson<EmployeesLookupResponse>('/api/employees?page=1&per_page=200')
   return payload.data
+}
+
+export async function createMedicalCertificate(payload: {
+  employee_id: string
+  employee_name: string
+  issue_date: string
+  days_off: number
+  icd_code: string
+  is_mental_health: boolean
+  doctor_name: string
+  return_date: string
+  inss_referral: boolean
+  nexus_risk: 'low' | 'medium' | 'high' | 'none'
+  attachment: {
+    file_name: string
+    mime_type: string
+    file_size_bytes: number
+  }
+}) {
+  return apiJson<{ message: string }>('/api/medical-certificates', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
 }

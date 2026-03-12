@@ -1,4 +1,6 @@
 import { apiJson } from '@/lib/api-client'
+import type { PaginatedResponse } from '@/types/api'
+export type { PaginationMeta } from '@/types/api'
 
 export type ComplaintStatus =
   | 'received'
@@ -21,18 +23,7 @@ export interface Complaint {
   created_at: string
 }
 
-export interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-export interface ComplaintsResponse {
-  data: Complaint[]
-  meta: PaginationMeta
-}
+export type ComplaintsResponse = PaginatedResponse<Complaint>
 
 export interface ComplaintFilters {
   search: string

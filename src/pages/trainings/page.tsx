@@ -33,6 +33,7 @@ import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTi
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { createPaginationMeta } from '@/lib/pagination'
 import { cn } from '@/lib/utils'
 import {
   fetchTrainings,
@@ -106,13 +107,7 @@ export function TrainingsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [trainings, setTrainings] = useState<Training[]>([])
-  const [meta, setMeta] = useState<PaginationMeta>({
-    total: 0,
-    current_page: 1,
-    per_page: 10,
-    last_page: 1,
-    first_page: 1,
-  })
+  const [meta, setMeta] = useState<PaginationMeta>(() => createPaginationMeta(0, 1, 10))
   const [stats, setStats] = useState({
     completed: 0,
     attendance_rate: 0,
