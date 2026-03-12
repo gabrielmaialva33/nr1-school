@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, type ElementType, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -9,11 +9,12 @@ import {
   GripVertical,
   ListChecks,
   MoreVertical,
+  Pencil,
   Plus,
   Search,
+  Sparkles,
   Trash2,
   User,
-  Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -25,6 +26,7 @@ import {
   Sheet,
   SheetBody,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -32,6 +34,7 @@ import {
   Dialog,
   DialogBody,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -47,45 +50,73 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import {
+  Kanban,
+  KanbanBoard,
+  KanbanColumn,
+  KanbanColumnContent,
+  KanbanItem,
+  KanbanItemHandle,
+  KanbanOverlay,
+} from '@/components/ui/kanban'
+import {
   fetchActionPlans,
   type ActionPlan,
   type PlanStatus,
 } from '@/services/action-plans'
 
-const columnConfig: Array<{
+type BoardColumnId = 'pending' | 'in_progress' | 'completed'
+
+const boardColumnConfig: Array<{
+  id: BoardColumnId
   status: PlanStatus[]
   title: string
+  helper: string
   color: string
   bgColor: string
   dotColor: string
 }> = [
   {
+    id: 'pending',
     status: ['pending', 'overdue'],
     title: 'Pendente',
-    color: 'text-orange-700',
-    bgColor: 'bg-orange-50',
+    helper: 'Aguardando priorização ou início',
+    color: 'text-orange-800 dark:text-orange-200',
+    bgColor: 'bg-orange-100/90 dark:bg-orange-950/55',
     dotColor: 'bg-orange-500',
   },
   {
+    id: 'in_progress',
     status: ['in_progress'],
     title: 'Em Andamento',
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-50',
-    dotColor: 'bg-blue-500',
+    helper: 'Planos em execução com responsável ativo',
+    color: 'text-cyan-800 dark:text-cyan-200',
+    bgColor: 'bg-cyan-100/90 dark:bg-cyan-950/55',
+    dotColor: 'bg-cyan-500',
   },
   {
+    id: 'completed',
     status: ['completed', 'verified'],
     title: 'Concluído',
-    color: 'text-emerald-700',
-    bgColor: 'bg-emerald-50',
+    helper: 'Ações concluídas e prontas para evidência',
+    color: 'text-emerald-800 dark:text-emerald-200',
+    bgColor: 'bg-emerald-100/90 dark:bg-emerald-950/55',
     dotColor: 'bg-emerald-500',
   },
 ]
 
 const typeMeta: Record<string, { label: string; className: string }> = {
-  preventive: { label: 'Preventiva', className: 'bg-blue-100 text-blue-700' },
-  corrective: { label: 'Corretiva', className: 'bg-orange-100 text-orange-700' },
-  monitoring: { label: 'Monitoramento', className: 'bg-purple-100 text-purple-700' },
+  preventive: {
+    label: 'Preventiva',
+    className: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-200',
+  },
+  corrective: {
+    label: 'Corretiva',
+    className: 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-200',
+  },
+  monitoring: {
+    label: 'Monitoramento',
+    className: 'bg-violet-100 text-violet-800 dark:bg-violet-950/60 dark:text-violet-200',
+  },
 }
 
 const statusLabels: Record<PlanStatus, string> = {
@@ -109,89 +140,234 @@ function isOverdue(deadline: string) {
   return new Date(deadline) < new Date()
 }
 
-function KanbanCard({ plan, onSelect }: { plan: ActionPlan; onSelect: (plan: ActionPlan) => void }) {
+function getBoardColumnId(status: PlanStatus): BoardColumnId {
+  if (status === 'in_progress') return 'in_progress'
+  if (status === 'completed' || status === 'verified') return 'completed'
+  return 'pending'
+}
+
+function getStatusForColumn(plan: ActionPlan, columnId: BoardColumnId): PlanStatus {
+  if (columnId === 'pending') {
+    return isOverdue(plan.deadline) ? 'overdue' : 'pending'
+  }
+
+  if (columnId === 'in_progress') {
+    return 'in_progress'
+  }
+
+  return plan.status === 'verified' ? 'verified' : 'completed'
+}
+
+function createPlanOrder(plans: ActionPlan[]) {
+  return plans.reduce<Record<string, number>>((acc, plan, index) => {
+    acc[plan.id] = index
+    return acc
+  }, {})
+}
+
+function sortPlans(plans: ActionPlan[], planOrder: Record<string, number>) {
+  return [...plans].sort((left, right) => {
+    const leftOrder = planOrder[left.id] ?? Number.MAX_SAFE_INTEGER
+    const rightOrder = planOrder[right.id] ?? Number.MAX_SAFE_INTEGER
+    return leftOrder - rightOrder
+  })
+}
+
+function buildBoardColumns(plans: ActionPlan[]): Record<BoardColumnId, ActionPlan[]> {
+  return {
+    pending: plans.filter(plan => getBoardColumnId(plan.status) === 'pending'),
+    in_progress: plans.filter(plan => getBoardColumnId(plan.status) === 'in_progress'),
+    completed: plans.filter(plan => getBoardColumnId(plan.status) === 'completed'),
+  }
+}
+
+function getInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0]?.toUpperCase() ?? '')
+    .join('')
+}
+
+function KanbanCard({
+  plan,
+  onSelect,
+  dragging = false,
+}: {
+  plan: ActionPlan
+  onSelect: (planId: string) => void
+  dragging?: boolean
+}) {
   const type = typeMeta[plan.action_type]
-  const overdue = plan.status !== 'completed' && plan.status !== 'verified' && isOverdue(plan.deadline)
+  const overdue =
+    plan.status !== 'completed' && plan.status !== 'verified' && isOverdue(plan.deadline)
 
   return (
-    <div className="group rounded-lg border bg-card p-4 shadow-xs shadow-black/5 transition-shadow hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <Badge className={cn('border-0 text-[10px]', type?.className)}>
+    <div
+      className={cn(
+        'surface-interactive relative overflow-hidden rounded-[24px] border border-border/75 bg-card/96 p-4 shadow-[var(--shadow-soft)] backdrop-blur-sm',
+        'focus-within:ring-2 focus-within:ring-primary/20',
+        dragging && 'rotate-1 border-primary/35 shadow-[var(--shadow-hover)]',
+      )}
+    >
+      <div
+        className={cn(
+          'absolute inset-x-0 top-0 h-1',
+          overdue
+            ? 'bg-destructive/70'
+            : plan.status === 'in_progress'
+              ? 'bg-cyan-500/75'
+              : plan.status === 'completed' || plan.status === 'verified'
+                ? 'bg-emerald-500/75'
+                : 'bg-orange-500/75',
+        )}
+      />
+      <div className="flex items-start justify-between gap-3">
+        <Badge className={cn('border-0 text-[10px] font-semibold tracking-wide uppercase', type?.className)}>
           {type?.label}
         </Badge>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-7 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" onClick={() => onSelect(plan)}>
-              <MoreVertical className="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Ver detalhes</TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <KanbanItemHandle asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    'inline-flex size-8 items-center justify-center rounded-xl border border-border/70 bg-background/80 text-muted-foreground/80 transition',
+                    'hover:border-primary/35 hover:bg-primary/5 hover:text-primary focus-visible:outline-none',
+                  )}
+                  aria-label={`Mover ${plan.title}`}
+                >
+                  <GripVertical className="size-3.5" />
+                </button>
+              </KanbanItemHandle>
+            </TooltipTrigger>
+            <TooltipContent>Arrastar plano</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-xl text-muted-foreground hover:bg-muted/80"
+                onClick={() => onSelect(plan.id)}
+              >
+                <MoreVertical className="size-3.5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Ver detalhes</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
-      <h4 className="mt-2 text-sm font-medium leading-snug line-clamp-2">
+      <h4 className="mt-3 text-sm font-semibold leading-snug text-foreground line-clamp-2">
         {plan.title}
       </h4>
-      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+      <p className="mt-1 text-xs leading-5 text-muted-foreground line-clamp-3">
         {plan.description}
       </p>
 
-      <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <User className="size-3" />
-          <span className="max-w-24 truncate">{plan.responsible_name}</span>
+      <div className="mt-4 grid gap-2">
+        <div className="flex items-center gap-2 rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+          <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+            {getInitials(plan.responsible_name)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Responsável
+            </p>
+            <p className="truncate text-xs font-medium text-foreground">{plan.responsible_name}</p>
+          </div>
         </div>
-        <div className={cn('flex items-center gap-1', overdue && 'text-destructive font-medium')}>
-          <Calendar className="size-3" />
-          <span>{new Date(plan.deadline).toLocaleDateString('pt-BR')}</span>
+        <div
+          className={cn(
+            'inline-flex items-center gap-1.5 rounded-2xl border border-border/60 px-3 py-2 text-[11px] font-medium',
+            overdue
+              ? 'bg-destructive/10 text-destructive'
+              : 'bg-secondary/60 text-secondary-foreground',
+          )}
+        >
+          <Calendar className="size-3.5" />
+          <span>Prazo {new Date(plan.deadline).toLocaleDateString('pt-BR')}</span>
         </div>
       </div>
 
-      {overdue && (
-        <div className="mt-2 flex items-center gap-1 rounded bg-red-50 px-2 py-1 text-[10px] font-medium text-red-700">
-          <AlertTriangle className="size-3" />
-          Prazo vencido
-        </div>
-      )}
+      <div className="mt-4 flex items-center justify-between border-t border-dashed border-border/70 pt-3">
+        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+          {statusLabels[plan.status]}
+        </span>
+        {overdue ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[10px] font-semibold text-destructive">
+            <AlertTriangle className="size-3" />
+            Prazo vencido
+          </span>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">Risco {plan.risk_id}</span>
+        )}
+      </div>
     </div>
   )
 }
 
-function KanbanColumn({
+function ActionPlanKanbanColumn({
+  columnId,
   title,
+  helper,
   plans,
   color,
   bgColor,
   dotColor,
   onSelectPlan,
 }: {
+  columnId: BoardColumnId
   title: string
+  helper: string
   plans: ActionPlan[]
   color: string
   bgColor: string
   dotColor: string
-  onSelectPlan: (plan: ActionPlan) => void
+  onSelectPlan: (planId: string) => void
 }) {
   return (
-    <div className="min-w-[280px] flex-shrink-0 lg:min-w-0 flex flex-col rounded-xl border bg-muted/30">
-      <div className={cn('flex items-center gap-2 rounded-t-xl px-4 py-3', bgColor)}>
-        <div className={cn('size-2 rounded-full', dotColor)} />
-        <h3 className={cn('text-sm font-semibold', color)}>{title}</h3>
-        <Badge variant="outline" className="ml-auto text-xs">
-          {plans.length}
-        </Badge>
+    <KanbanColumn
+      value={columnId}
+      className="rounded-[28px] border border-border/80 bg-card/68 shadow-[var(--shadow-soft)] backdrop-blur-sm"
+    >
+      <div className={cn('sticky top-0 z-10 rounded-t-[28px] border-b border-border/70 px-4 py-4 backdrop-blur-sm', bgColor)}>
+        <div className="flex items-start gap-3">
+          <div className={cn('mt-1 size-2.5 rounded-full', dotColor)} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className={cn('text-sm font-semibold', color)}>{title}</h3>
+              <Badge variant="outline" className="rounded-full border-border/70 bg-background/75 text-xs">
+                {plans.length}
+              </Badge>
+            </div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">{helper}</p>
+          </div>
+        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-3 p-3">
+
+      <KanbanColumnContent value={columnId} className="min-h-[420px] gap-3 p-3">
         {plans.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <GripVertical className="size-8 text-muted-foreground/30" />
-            <p className="mt-2 text-xs text-muted-foreground">Nenhum plano</p>
+          <div className="flex min-h-[240px] flex-1 flex-col items-center justify-center rounded-[24px] border border-dashed border-border/80 bg-muted/25 px-6 text-center">
+            <GripVertical className="size-8 text-muted-foreground/40" />
+            <p className="mt-3 text-sm font-medium text-foreground">Nenhum plano nesta etapa</p>
+            <p className="mt-1 max-w-52 text-xs leading-5 text-muted-foreground">
+              Arraste um card para esta coluna para reorganizar o fluxo da execução.
+            </p>
           </div>
         ) : (
-          plans.map(plan => <KanbanCard key={plan.id} plan={plan} onSelect={onSelectPlan} />)
+          plans.map(plan => (
+            <KanbanItem key={plan.id} value={plan.id}>
+              <KanbanCard plan={plan} onSelect={onSelectPlan} />
+            </KanbanItem>
+          ))
         )}
-      </div>
-    </div>
+      </KanbanColumnContent>
+    </KanbanColumn>
   )
 }
 
@@ -205,7 +381,7 @@ function StatCard({
   title: string
   value: number
   helper: string
-  icon: React.ElementType
+  icon: ElementType
   tone?: 'primary' | 'destructive' | 'info' | 'success' | 'warning'
 }) {
   const tones = {
@@ -218,7 +394,7 @@ function StatCard({
   const t = tones[tone]
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-xs shadow-black/5">
+    <div className="surface-card rounded-2xl border bg-card p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{title}</p>
@@ -236,8 +412,14 @@ function StatCard({
 }
 
 export function ActionPlansPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [plans, setPlans] = useState<ActionPlan[]>([])
+  const [planOrder, setPlanOrder] = useState<Record<string, number>>({})
+  const [boardColumns, setBoardColumns] = useState<Record<BoardColumnId, ActionPlan[]>>({
+    pending: [],
+    in_progress: [],
+    completed: [],
+  })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<PlanStatus | 'all'>(() => {
     const statusParam = searchParams.get('status')
@@ -247,18 +429,21 @@ export function ActionPlansPage() {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedPlan, setSelectedPlan] = useState<ActionPlan | null>(null)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   useEffect(() => {
     setIsLoading(true)
     setError(null)
 
-    fetchActionPlans(statusFilter)
-      .then(res => setPlans(res.data))
+    fetchActionPlans('all')
+      .then(res => {
+        setPlans(res.data)
+        setPlanOrder(createPlanOrder(res.data))
+      })
       .catch(err => setError(err instanceof Error ? err.message : 'Erro ao carregar dados'))
       .finally(() => setIsLoading(false))
-  }, [statusFilter])
+  }, [])
 
   useEffect(() => {
     const statusParam = searchParams.get('status')
@@ -269,20 +454,105 @@ export function ActionPlansPage() {
     )
   }, [searchParams])
 
-  const filtered = search.trim()
-    ? plans.filter(p =>
-        p.title.toLowerCase().includes(search.toLowerCase()) ||
-        p.responsible_name.toLowerCase().includes(search.toLowerCase())
+  const filteredPlans = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase()
+
+    return sortPlans(plans, planOrder).filter(plan => {
+      if (statusFilter !== 'all' && plan.status !== statusFilter) {
+        return false
+      }
+
+      if (!normalizedSearch) {
+        return true
+      }
+
+      return (
+        plan.title.toLowerCase().includes(normalizedSearch) ||
+        plan.responsible_name.toLowerCase().includes(normalizedSearch)
       )
-    : plans
+    })
+  }, [planOrder, plans, search, statusFilter])
 
-  const pending = filtered.filter(p => p.status === 'pending' || p.status === 'overdue').length
-  const inProgress = filtered.filter(p => p.status === 'in_progress').length
-  const completed = filtered.filter(p => p.status === 'completed' || p.status === 'verified').length
-  const overdue = filtered.filter(p => p.status !== 'completed' && p.status !== 'verified' && isOverdue(p.deadline)).length
+  const selectedPlan = useMemo(
+    () => plans.find(plan => plan.id === selectedPlanId) ?? null,
+    [plans, selectedPlanId],
+  )
 
-  function handleCreateSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
+  const planIndex = useMemo(() => {
+    return plans.reduce<Record<string, ActionPlan>>((acc, plan) => {
+      acc[plan.id] = plan
+      return acc
+    }, {})
+  }, [plans])
+
+  useEffect(() => {
+    setBoardColumns(buildBoardColumns(filteredPlans))
+  }, [filteredPlans])
+
+  const totalPlans = filteredPlans.length
+  const pendingPlans = filteredPlans.filter(plan => getBoardColumnId(plan.status) === 'pending').length
+  const completedPlans = filteredPlans.filter(plan => getBoardColumnId(plan.status) === 'completed').length
+  const inProgressPlans = filteredPlans.filter(plan => getBoardColumnId(plan.status) === 'in_progress').length
+  const overduePlans = filteredPlans.filter(
+    plan => plan.status !== 'completed' && plan.status !== 'verified' && isOverdue(plan.deadline),
+  ).length
+  const completionRate = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0
+
+  function handleStatusFilterChange(value: PlanStatus | 'all') {
+    setStatusFilter(value)
+
+    const nextParams = new URLSearchParams(searchParams)
+    if (value === 'all') {
+      nextParams.delete('status')
+    } else {
+      nextParams.set('status', value)
+    }
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  function handleBoardChange(nextBoardColumns: Record<BoardColumnId, ActionPlan[]>) {
+    setBoardColumns(nextBoardColumns)
+
+    const nextOrderEntries = boardColumnConfig.flatMap(column =>
+      nextBoardColumns[column.id].map(plan => plan.id),
+    )
+
+    if (nextOrderEntries.length > 0) {
+      setPlanOrder(current => {
+        const nextOrder = { ...current }
+        nextOrderEntries.forEach((planId, index) => {
+          nextOrder[planId] = index
+        })
+        return nextOrder
+      })
+    }
+
+    const nextStatusById = new Map<string, PlanStatus>()
+    boardColumnConfig.forEach(column => {
+      nextBoardColumns[column.id].forEach(plan => {
+        nextStatusById.set(plan.id, getStatusForColumn(plan, column.id))
+      })
+    })
+
+    setPlans(currentPlans => {
+      let hasChanges = false
+
+      const nextPlans = currentPlans.map(plan => {
+        const nextStatus = nextStatusById.get(plan.id)
+        if (!nextStatus || nextStatus === plan.status) {
+          return plan
+        }
+
+        hasChanges = true
+        return { ...plan, status: nextStatus }
+      })
+
+      return hasChanges ? nextPlans : currentPlans
+    })
+  }
+
+  function handleCreateSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
     toast.success('Plano de ação criado com sucesso')
     setIsCreateOpen(false)
   }
@@ -304,76 +574,206 @@ export function ActionPlansPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Planos de Ação</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gerencie as ações corretivas e preventivas para cada risco identificado.
-          </p>
+    <div className="page-shell space-y-6">
+      <div className="page-stagger grid gap-6">
+        <div className="relative overflow-hidden rounded-[30px] border border-border/70 bg-card/85 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm md:p-7">
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_42%),radial-gradient(circle_at_60%_50%,rgba(8,145,178,0.1),transparent_30%)]" />
+          <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_340px] xl:items-end">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold tracking-wide text-primary uppercase">
+                <Sparkles className="size-3.5" />
+                Board operacional com drag and drop
+              </div>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
+                Planos de Ação
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Organize ações corretivas, preventivas e de monitoramento com um fluxo visual limpo.
+                O board mostra prioridades, prazos e responsáveis sem te jogar para outra tela.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {pendingPlans} aguardando início
+                </div>
+                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {inProgressPlans} em execução
+                </div>
+                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {completionRate}% de conclusão no recorte
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[26px] border border-border/70 bg-background/72 p-4 shadow-[var(--shadow-soft)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Ritmo do board
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+                    {completionRate}%
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    dos planos do recorte atual já estão concluídos ou verificados.
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  className="gap-2 self-start"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  <Plus className="size-4" />
+                  Novo Plano
+                </Button>
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-primary to-orange-400 transition-all"
+                    style={{ width: `${completionRate}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-foreground">{pendingPlans}</p>
+                    <p className="mt-1 text-muted-foreground">pendentes</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-foreground">{inProgressPlans}</p>
+                    <p className="mt-1 text-muted-foreground">em andamento</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-destructive">{overduePlans}</p>
+                    <p className="mt-1 text-muted-foreground">vencidos</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <Button variant="primary" size="lg" className="gap-2 self-start" onClick={() => setIsCreateOpen(true)}>
-          <Plus className="size-4" />
-          Novo Plano
-        </Button>
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Total" value={filtered.length} helper="Planos de ação cadastrados" icon={ListChecks} tone="primary" />
-        <StatCard title="Pendentes" value={pending} helper="Aguardando início" icon={Clock} tone="warning" />
-        <StatCard title="Concluídos" value={completed} helper="Finalizados com sucesso" icon={CheckCircle2} tone="success" />
-        <StatCard title="Vencidos" value={overdue} helper="Prazo expirado" icon={AlertTriangle} tone="destructive" />
-      </div>
-
-      <div className="flex items-center gap-3">
-        <InputGroup className="w-full max-w-md">
-          <InputWrapper variant="lg">
-            <Search className="size-4 text-muted-foreground" />
-            <Input
-              variant="lg"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar por título ou responsável"
-            />
-          </InputWrapper>
-        </InputGroup>
-        <Select
-          value={statusFilter}
-          onValueChange={value => setStatusFilter(value as PlanStatus | 'all')}
-        >
-          <SelectTrigger size="lg" className="min-w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="in_progress">Em andamento</SelectItem>
-            <SelectItem value="completed">Concluído</SelectItem>
-            <SelectItem value="verified">Verificado</SelectItem>
-            <SelectItem value="overdue">Vencido</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible">
-        {columnConfig.map(col => (
-          <KanbanColumn
-            key={col.title}
-            title={col.title}
-            plans={filtered.filter(p => col.status.includes(p.status))}
-            color={col.color}
-            bgColor={col.bgColor}
-            dotColor={col.dotColor}
-            onSelectPlan={setSelectedPlan}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Total"
+            value={totalPlans}
+            helper="Planos de ação no recorte atual"
+            icon={ListChecks}
+            tone="primary"
           />
-        ))}
+          <StatCard
+            title="Pendentes"
+            value={pendingPlans}
+            helper="Aguardando priorização ou início"
+            icon={Clock}
+            tone="warning"
+          />
+          <StatCard
+            title="Concluídos"
+            value={completedPlans}
+            helper="Finalizados ou validados"
+            icon={CheckCircle2}
+            tone="success"
+          />
+          <StatCard
+            title="Vencidos"
+            value={overduePlans}
+            helper="Demandam atenção imediata"
+            icon={AlertTriangle}
+            tone="destructive"
+          />
+        </div>
+
+        <div className="surface-card flex flex-col gap-4 rounded-[26px] border bg-card/90 p-4 backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center">
+            <InputGroup className="w-full max-w-md">
+              <InputWrapper variant="lg">
+                <Search className="size-4 text-muted-foreground" />
+                <Input
+                  variant="lg"
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  placeholder="Buscar por título ou responsável"
+                />
+              </InputWrapper>
+            </InputGroup>
+            <Select
+              value={statusFilter}
+              onValueChange={value => handleStatusFilterChange(value as PlanStatus | 'all')}
+            >
+              <SelectTrigger size="lg" className="min-w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="pending">Pendente</SelectItem>
+                <SelectItem value="in_progress">Em andamento</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
+                <SelectItem value="verified">Verificado</SelectItem>
+                <SelectItem value="overdue">Vencido</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="rounded-2xl border border-dashed border-border/80 bg-muted/35 px-4 py-3">
+            <p className="text-xs font-semibold tracking-wide text-foreground uppercase">
+              Interação
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Arraste pelo grip lateral ou use teclado para mover os cards entre as colunas.
+            </p>
+          </div>
+        </div>
+
+        <Kanban<ActionPlan>
+          value={boardColumns}
+          onValueChange={handleBoardChange}
+          getItemValue={plan => plan.id}
+          className="overflow-x-auto pb-2"
+        >
+          <KanbanBoard className="min-w-[980px] gap-5 lg:min-w-0">
+            {boardColumnConfig.map(column => (
+              <ActionPlanKanbanColumn
+                key={column.id}
+                columnId={column.id}
+                title={column.title}
+                helper={column.helper}
+                plans={boardColumns[column.id]}
+                color={column.color}
+                bgColor={column.bgColor}
+                dotColor={column.dotColor}
+                onSelectPlan={setSelectedPlanId}
+              />
+            ))}
+          </KanbanBoard>
+          <KanbanOverlay className="z-50">
+            {({ value, variant }) => {
+              if (variant !== 'item') {
+                return null
+              }
+
+              const draggedPlan = planIndex[String(value)]
+              if (!draggedPlan) {
+                return null
+              }
+
+              return <KanbanCard plan={draggedPlan} onSelect={setSelectedPlanId} dragging />
+            }}
+          </KanbanOverlay>
+        </Kanban>
       </div>
 
-      {/* Plan Details Sheet */}
-      <Sheet open={!!selectedPlan} onOpenChange={open => { if (!open) setSelectedPlan(null) }}>
+      <Sheet
+        open={!!selectedPlan}
+        onOpenChange={open => {
+          if (!open) setSelectedPlanId(null)
+        }}
+      >
         <SheetContent side="right" className="sm:max-w-md">
           <SheetHeader>
             <SheetTitle>{selectedPlan?.title}</SheetTitle>
+            <SheetDescription>
+              Detalhes operacionais do plano de ação, com responsável, prazo e risco vinculado.
+            </SheetDescription>
           </SheetHeader>
           {selectedPlan && (
             <SheetBody className="space-y-5">
@@ -409,10 +809,15 @@ export function ActionPlansPage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">Prazo</p>
-                  <p className={cn(
-                    'text-sm',
-                    selectedPlan.status !== 'completed' && selectedPlan.status !== 'verified' && isOverdue(selectedPlan.deadline) && 'text-destructive font-medium'
-                  )}>
+                  <p
+                    className={cn(
+                      'text-sm',
+                      selectedPlan.status !== 'completed' &&
+                        selectedPlan.status !== 'verified' &&
+                        isOverdue(selectedPlan.deadline) &&
+                        'font-medium text-destructive',
+                    )}
+                  >
                     {new Date(selectedPlan.deadline).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
@@ -432,8 +837,13 @@ export function ActionPlansPage() {
                   variant="primary"
                   className="w-full gap-2"
                   onClick={() => {
+                    setPlans(currentPlans =>
+                      currentPlans.map(plan =>
+                        plan.id === selectedPlan.id ? { ...plan, status: 'completed' } : plan,
+                      ),
+                    )
                     toast.success('Plano marcado como concluído')
-                    setSelectedPlan(null)
+                    setSelectedPlanId(null)
                   }}
                 >
                   <CheckCircle2 className="size-4" />
@@ -444,7 +854,7 @@ export function ActionPlansPage() {
                   className="w-full gap-2"
                   onClick={() => {
                     toast.success('Abrindo edição do plano')
-                    setSelectedPlan(null)
+                    setSelectedPlanId(null)
                   }}
                 >
                   <Pencil className="size-4" />
@@ -455,7 +865,7 @@ export function ActionPlansPage() {
                   className="w-full gap-2 text-destructive hover:bg-destructive/5 hover:text-destructive"
                   onClick={() => {
                     toast.success('Plano excluído com sucesso')
-                    setSelectedPlan(null)
+                    setSelectedPlanId(null)
                   }}
                 >
                   <Trash2 className="size-4" />
@@ -467,11 +877,13 @@ export function ActionPlansPage() {
         </SheetContent>
       </Sheet>
 
-      {/* New Plan Dialog */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Novo Plano de Ação</DialogTitle>
+            <DialogDescription>
+              Cadastre uma ação corretiva, preventiva ou de monitoramento para o risco selecionado.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateSubmit}>
             <DialogBody className="space-y-4">
@@ -502,7 +914,11 @@ export function ActionPlansPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan-description">Descrição</Label>
-                <Textarea id="plan-description" placeholder="Descreva o plano de ação" rows={4} />
+                <Textarea
+                  id="plan-description"
+                  placeholder="Descreva o plano de ação"
+                  rows={4}
+                />
               </div>
             </DialogBody>
             <DialogFooter>

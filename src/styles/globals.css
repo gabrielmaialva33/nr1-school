@@ -67,6 +67,11 @@
   --radius: 0.5rem;
   --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 30px rgba(15, 23, 42, 0.06);
   --shadow-hover: 0 8px 20px rgba(15, 23, 42, 0.08), 0 22px 48px rgba(15, 23, 42, 0.12);
+  --profile-hero-surface: #fff7ed;
+  --profile-hero-border: #fdba74;
+  --profile-hero-accent: #9a3412;
+  --profile-panel-surface: rgba(255, 255, 255, 0.92);
+  --profile-panel-muted: #fffaf5;
 }
 
 .dark {
@@ -111,6 +116,11 @@
   --ring: #fb923c;
   --shadow-soft: 0 1px 2px rgba(2, 6, 23, 0.25), 0 12px 30px rgba(2, 6, 23, 0.32);
   --shadow-hover: 0 10px 24px rgba(2, 6, 23, 0.34), 0 24px 56px rgba(2, 6, 23, 0.42);
+  --profile-hero-surface: #182235;
+  --profile-hero-border: #7c2d12;
+  --profile-hero-accent: #fdba74;
+  --profile-panel-surface: rgba(15, 23, 42, 0.94);
+  --profile-panel-muted: #111827;
 }
 
 /** Theme Setup **/
@@ -224,6 +234,51 @@
 
   *:focus-visible {
     @apply outline-ring rounded-xs shadow-none outline-2 outline-offset-3 transition-none!;
+  }
+}
+
+@layer components {
+  .employee-profile-hero {
+    border: 1px solid color-mix(in srgb, var(--profile-hero-border) 58%, var(--color-border));
+    background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 34%),
+      linear-gradient(135deg, var(--profile-hero-surface), color-mix(in srgb, var(--profile-panel-muted) 72%, var(--profile-hero-surface)));
+    box-shadow: var(--shadow-soft);
+    @apply rounded-[28px] p-6 md:p-8;
+  }
+
+  .employee-profile-panel {
+    border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+    background: var(--profile-panel-surface);
+    box-shadow: var(--shadow-soft);
+    @apply rounded-[24px] backdrop-blur-sm;
+  }
+
+  .employee-profile-kpi {
+    border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--profile-panel-muted) 80%, transparent), transparent),
+      var(--profile-panel-surface);
+    box-shadow: var(--shadow-soft);
+    @apply rounded-[22px] p-5;
+  }
+
+  .employee-profile-icon-wrap {
+    color: var(--profile-hero-accent);
+    background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+    @apply flex size-11 items-center justify-center rounded-2xl;
+  }
+
+  .employee-profile-info {
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    background: color-mix(in srgb, var(--profile-panel-muted) 74%, transparent);
+    @apply rounded-2xl p-4;
+  }
+
+  .employee-profile-row {
+    border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
+    background: color-mix(in srgb, var(--profile-panel-muted) 54%, transparent);
+    @apply flex flex-col gap-4 rounded-2xl p-4 lg:flex-row lg:items-start lg:justify-between;
   }
 }
 

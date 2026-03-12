@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
+  Activity,
   AlertTriangle,
   Eye,
   Pencil,
@@ -8,6 +9,7 @@ import {
   Search,
   ShieldCheck,
   ShieldX,
+  Sparkles,
   Wrench,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -40,6 +42,7 @@ import {
   Sheet,
   SheetBody,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
@@ -57,6 +60,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { createPaginationMeta } from '@/lib/pagination'
 import {
   fetchRisks,
   fetchRiskStats,
@@ -116,7 +120,7 @@ function StatCard({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-xs shadow-black/5">
+    <div className="surface-card rounded-2xl border bg-card p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">{title}</p>
@@ -191,13 +195,7 @@ export function RisksPage() {
     }
   })
   const [risks, setRisks] = useState<Risk[]>([])
-  const [meta, setMeta] = useState<PaginationMeta>({
-    total: 0,
-    current_page: 1,
-    per_page: 10,
-    last_page: 1,
-    first_page: 1,
-  })
+  const [meta, setMeta] = useState<PaginationMeta>(() => createPaginationMeta(0, 1, 10))
   const [stats, setStats] = useState({
     total: 0,
     critical: 0,
@@ -286,28 +284,89 @@ export function RisksPage() {
 
   const hasActiveFilters =
     filters.search.trim() || filters.status !== 'all' || filters.level !== 'all'
+  const criticalRate = stats.total > 0 ? Math.round((stats.critical / stats.total) * 100) : 0
+  const controlledRate = stats.total > 0 ? Math.round((stats.controlled / stats.total) * 100) : 0
+  const monitoredRate = stats.total > 0 ? Math.round((stats.treating / stats.total) * 100) : 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Inventário de Riscos
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Mapeie, priorize e acompanhe os riscos psicossociais por setor.
-          </p>
-        </div>
-        <Button variant="primary" size="lg" className="gap-2 self-start">
-          <Plus className="size-4" />
-          Novo Risco
-        </Button>
-      </div>
+    <div className="page-shell space-y-6">
+      <div className="page-stagger grid gap-6">
+        <div className="relative overflow-hidden rounded-[30px] border border-border/70 bg-card/85 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm md:p-7">
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.16),transparent_38%),radial-gradient(circle_at_62%_56%,rgba(249,115,22,0.12),transparent_30%)]" />
+          <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_340px] xl:items-end">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold tracking-wide text-primary uppercase">
+                <Sparkles className="size-3.5" />
+                Radar de exposição psicossocial
+              </div>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground">
+                Inventário de Riscos
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Mapeie, priorize e acompanhe os riscos psicossociais por setor com foco no que exige ação rápida.
+                O inventário consolida criticidade, tratamento e controle em uma visão operacional.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2.5">
+                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {stats.critical} intoleráveis no radar
+                </div>
+                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {stats.treating} em tratamento ativo
+                </div>
+                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                  {controlledRate}% sob controle
+                </div>
+              </div>
+            </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Total de Riscos"
-          value={stats.total}
+            <div className="rounded-[26px] border border-border/70 bg-background/72 p-4 shadow-[var(--shadow-soft)]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Exposição prioritária
+                  </p>
+                  <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+                    {criticalRate}%
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    do inventário atual está em faixa crítica e pede resposta imediata.
+                  </p>
+                </div>
+                <Button variant="primary" size="lg" className="gap-2 self-start">
+                  <Plus className="size-4" />
+                  Novo Risco
+                </Button>
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-destructive via-orange-500 to-primary transition-all"
+                    style={{ width: `${criticalRate}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-destructive">{stats.critical}</p>
+                    <p className="mt-1 text-muted-foreground">críticos</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-info">{monitoredRate}%</p>
+                    <p className="mt-1 text-muted-foreground">em tratamento</p>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-success">{controlledRate}%</p>
+                    <p className="mt-1 text-muted-foreground">controlados</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Total de Riscos"
+            value={stats.total}
           helper="Inventário consolidado da escola"
           icon={AlertTriangle}
           tone="primary"
@@ -332,13 +391,18 @@ export function RisksPage() {
           helper="Riscos com medidas estabilizadas"
           icon={ShieldCheck}
           tone="success"
-        />
-      </div>
+          />
+        </div>
 
-      <Card>
+        <Card className="surface-card rounded-[28px] border border-border/80 bg-card/92 backdrop-blur-sm">
         <CardHeader className="flex-col items-start gap-4">
           <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <CardTitle>Inventário de Riscos</CardTitle>
+            <div>
+              <CardTitle>Inventário de Riscos</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Use os filtros para refinar criticidade, etapa do tratamento e volume por página.
+              </p>
+            </div>
             <CardToolbar>
               <InputGroup className="w-full xl:max-w-md">
                 <InputWrapper variant="lg">
@@ -432,7 +496,24 @@ export function RisksPage() {
         </CardHeader>
 
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/25 px-4 py-3 text-xs">
+            <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 font-medium text-foreground">
+              <Activity className="size-3.5 text-primary" />
+              {meta.total} registros no recorte atual
+            </div>
+            {hasActiveFilters ? (
+              <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 font-medium text-foreground">
+                <AlertTriangle className="size-3.5 text-orange-500" />
+                filtros ativos aplicados
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 font-medium text-foreground">
+                <ShieldCheck className="size-3.5 text-success" />
+                visão consolidada do inventário
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto rounded-2xl border border-border/70">
           <Table>
             <TableHeader>
               <TableRow>
@@ -476,7 +557,7 @@ export function RisksPage() {
                 </TableRow>
               ) : (
                 risks.map((risk) => (
-                  <TableRow key={risk.id}>
+                  <TableRow key={risk.id} className="hover:bg-muted/35">
                     <TableCell>
                       <div className="space-y-1">
                         <p className="font-medium">{risk.category_label}</p>
@@ -628,6 +709,7 @@ export function RisksPage() {
           </Pagination>
         </CardFooter>
       </Card>
+      </div>
 
       <Sheet
         open={!!selectedRisk}
@@ -645,6 +727,9 @@ export function RisksPage() {
                     <SheetTitle className="text-lg leading-tight">
                       {selectedRisk.category_label}
                     </SheetTitle>
+                    <SheetDescription className="mt-2">
+                      Panorama operacional do risco, com criticidade, ambiente afetado e status atual de tratamento.
+                    </SheetDescription>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {selectedRisk.environment_name}
                     </p>
@@ -670,8 +755,8 @@ export function RisksPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 space-y-1.5">
                     <span className="text-xs text-muted-foreground">
                       Status
                     </span>
@@ -684,7 +769,7 @@ export function RisksPage() {
                       </Badge>
                     </div>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 space-y-1.5">
                     <span className="text-xs text-muted-foreground">
                       Data de Identificação
                     </span>
@@ -694,7 +779,7 @@ export function RisksPage() {
                       )}
                     </p>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 p-4 space-y-1.5 sm:col-span-2">
                     <span className="text-xs text-muted-foreground">
                       Responsável
                     </span>
@@ -702,10 +787,10 @@ export function RisksPage() {
                   </div>
                 </div>
 
-                <div className="space-y-3 rounded-lg border bg-muted/50 p-4">
+                <div className="space-y-3 rounded-2xl border bg-muted/35 p-5">
                   <h4 className="text-sm font-medium">Matriz de Risco</h4>
-                  <div className="flex items-center gap-6">
-                    <div className="space-y-1">
+                  <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-3">
+                    <div className="space-y-1 rounded-2xl border border-border/60 bg-background/65 p-4 text-center">
                       <span className="text-xs text-muted-foreground">
                         Probabilidade
                       </span>
@@ -714,7 +799,7 @@ export function RisksPage() {
                       </p>
                     </div>
                     <div className="text-2xl text-muted-foreground/30">×</div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 rounded-2xl border border-border/60 bg-background/65 p-4 text-center">
                       <span className="text-xs text-muted-foreground">
                         Severidade
                       </span>
@@ -723,7 +808,7 @@ export function RisksPage() {
                       </p>
                     </div>
                     <div className="text-2xl text-muted-foreground/30">=</div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 rounded-2xl border border-border/60 bg-background/65 p-4 text-center">
                       <span className="text-xs text-muted-foreground">
                         Score
                       </span>

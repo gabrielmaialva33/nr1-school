@@ -1,4 +1,6 @@
 import { apiJson } from '@/lib/api-client'
+import type { PaginatedResponse } from '@/types/api'
+export type { PaginationMeta } from '@/types/api'
 
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical'
 export type RiskStatus = 'identified' | 'treating' | 'controlled' | 'eliminated'
@@ -16,18 +18,7 @@ export interface Risk {
   created_at: string
 }
 
-export interface PaginationMeta {
-  total: number
-  current_page: number
-  per_page: number
-  last_page: number
-  first_page: number
-}
-
-export interface RisksResponse {
-  data: Risk[]
-  meta: PaginationMeta
-}
+export type RisksResponse = PaginatedResponse<Risk>
 
 export interface RiskFilters {
   search: string
