@@ -3,13 +3,24 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
 import { toAbsoluteUrl } from './lib/helpers'
+import { bootstrapTenantSession, getCurrentTenantId } from './lib/tenant'
 
 function patchApiFetchBasePath() {
   const originalFetch = window.fetch.bind(window)
 
   window.fetch = ((input, init) => {
     if (typeof input === 'string' && input.startsWith('/api/')) {
-      return originalFetch(toAbsoluteUrl(input), init)
+      const headers = new Headers(init?.headers)
+      const tenantId = getCurrentTenantId()
+
+      if (tenantId && !headers.has('x-tenant-id')) {
+        headers.set('x-tenant-id', tenantId)
+      }
+
+      return originalFetch(toAbsoluteUrl(input), {
+        ...init,
+        headers,
+      })
     }
 
     return originalFetch(input, init)
@@ -30,7 +41,8 @@ async function enableMocking() {
 
 patchApiFetchBasePath()
 
-enableMocking().then(() => {
+enableMocking().then(async () => {
+  await bootstrapTenantSession()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <App />
