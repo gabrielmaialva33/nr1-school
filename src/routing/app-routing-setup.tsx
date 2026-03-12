@@ -1,34 +1,56 @@
+import { lazy, Suspense } from 'react'
 import { Route, Routes, Navigate } from 'react-router'
 import { AppLayout } from '@/layouts/app-layout'
 import { LoginPage } from '@/pages/auth/login'
-import { DashboardPage } from '@/pages/dashboard/page'
-import { PlaceholderPage } from '@/pages/placeholder'
+
+const DashboardPage = lazy(() => import('@/pages/dashboard/page').then(m => ({ default: m.DashboardPage })))
+const EnvironmentsPage = lazy(() => import('@/pages/environments/page').then(m => ({ default: m.EnvironmentsPage })))
+const EmployeesPage = lazy(() => import('@/pages/employees/page').then(m => ({ default: m.EmployeesPage })))
+const AssessmentsPage = lazy(() => import('@/pages/assessments/page').then(m => ({ default: m.AssessmentsPage })))
+const AssessmentResultsPage = lazy(() => import('@/pages/assessments/results-page').then(m => ({ default: m.AssessmentResultsPage })))
+const RisksPage = lazy(() => import('@/pages/risks/page').then(m => ({ default: m.RisksPage })))
+const ActionPlansPage = lazy(() => import('@/pages/action-plans/page').then(m => ({ default: m.ActionPlansPage })))
+const MedicalCertificatesPage = lazy(() => import('@/pages/medical-certificates/page').then(m => ({ default: m.MedicalCertificatesPage })))
+const TrainingsPage = lazy(() => import('@/pages/trainings/page').then(m => ({ default: m.TrainingsPage })))
+const ComplaintsPage = lazy(() => import('@/pages/complaints/page').then(m => ({ default: m.ComplaintsPage })))
+const ReportsPage = lazy(() => import('@/pages/reports/page').then(m => ({ default: m.ReportsPage })))
+const PlaceholderPage = lazy(() => import('@/pages/placeholder').then(m => ({ default: m.PlaceholderPage })))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  )
+}
 
 export function AppRoutingSetup() {
   return (
-    <Routes>
-      {/* Auth — sem layout */}
-      <Route path="/login" element={<LoginPage />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Auth — sem layout */}
+        <Route path="/login" element={<LoginPage />} />
 
-      {/* App — com layout (sidebar + header) */}
-      <Route element={<AppLayout />}>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/environments" element={<PlaceholderPage title="Setores" />} />
-        <Route path="/employees" element={<PlaceholderPage title="Funcionários" />} />
-        <Route path="/assessments" element={<PlaceholderPage title="Campanhas COPSOQ" />} />
-        <Route path="/assessments/results" element={<PlaceholderPage title="Resultado COPSOQ" />} />
-        <Route path="/risks" element={<PlaceholderPage title="Inventário de Riscos" />} />
-        <Route path="/action-plans" element={<PlaceholderPage title="Planos de Ação" />} />
-        <Route path="/medical-certificates" element={<PlaceholderPage title="Atestados Médicos" />} />
-        <Route path="/trainings" element={<PlaceholderPage title="Treinamentos" />} />
-        <Route path="/complaints" element={<PlaceholderPage title="Denúncias" />} />
-        <Route path="/reports" element={<PlaceholderPage title="Relatórios" />} />
-        <Route path="/users" element={<PlaceholderPage title="Gestão de Usuários" />} />
-        <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
-      </Route>
+        {/* App — com layout (sidebar + header) */}
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/environments" element={<EnvironmentsPage />} />
+          <Route path="/employees" element={<EmployeesPage />} />
+          <Route path="/assessments" element={<AssessmentsPage />} />
+          <Route path="/assessments/results" element={<AssessmentResultsPage />} />
+          <Route path="/risks" element={<RisksPage />} />
+          <Route path="/action-plans" element={<ActionPlansPage />} />
+          <Route path="/medical-certificates" element={<MedicalCertificatesPage />} />
+          <Route path="/trainings" element={<TrainingsPage />} />
+          <Route path="/complaints" element={<ComplaintsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/users" element={<PlaceholderPage title="Gestão de Usuários" />} />
+          <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
+        </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }

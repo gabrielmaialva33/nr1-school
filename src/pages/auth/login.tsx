@@ -68,7 +68,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen w-screen">
       {/* Left — Login Form */}
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
@@ -155,7 +155,7 @@ export function LoginPage() {
       </div>
 
       {/* Right — Branding + Countdown */}
-      <div className="hidden flex-col items-center justify-center bg-[#0f172a] px-12 lg:flex lg:w-[480px] xl:w-[540px]">
+      <div className="hidden flex-1 flex-col items-center justify-center bg-[#0f172a] px-12 lg:flex">
         <div className="flex size-20 items-center justify-center rounded-2xl bg-[#f97316]/10">
           <Shield className="size-10 text-[#f97316]" />
         </div>

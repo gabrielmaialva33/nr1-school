@@ -1,8 +1,13 @@
+import { actionPlansHandlers } from './action-plans'
+import { assessmentsHandlers } from './assessments'
 import { authHandlers } from './auth'
+import { complaintsHandlers } from './complaints'
 import { dashboardHandlers } from './dashboard'
-import { risksHandlers } from './risks'
 import { employeesHandlers } from './employees'
 import { environmentsHandlers } from './environments'
+import { medicalCertificatesHandlers } from './medical-certificates'
+import { risksHandlers } from './risks'
+import { trainingsHandlers } from './trainings'
 
 export const handlers = [
   ...authHandlers,
@@ -10,4 +15,9 @@ export const handlers = [
   ...risksHandlers,
   ...employeesHandlers,
   ...environmentsHandlers,
+  ...assessmentsHandlers,
+  ...actionPlansHandlers,
+  ...medicalCertificatesHandlers,
+  ...trainingsHandlers,
+  ...complaintsHandlers,
 ]

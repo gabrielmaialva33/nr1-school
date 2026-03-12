@@ -12,7 +12,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
-export function SidebarMenu({ isCollapsed = false }: { isCollapsed?: boolean }) {
+export function SidebarMenu({ isCollapsed = false, onNavigate }: { isCollapsed?: boolean; onNavigate?: () => void }) {
   const { pathname } = useLocation();
 
   const matchPath = useCallback(
@@ -53,6 +53,7 @@ export function SidebarMenu({ isCollapsed = false }: { isCollapsed?: boolean }) 
                   const ItemContent = (
                     <Link
                       to={item.path}
+                      onClick={onNavigate}
                       className={cn(
                         "flex items-center grow gap-3 h-full w-full",
                         isCollapsed && "justify-center"
@@ -92,7 +93,7 @@ export function SidebarMenu({ isCollapsed = false }: { isCollapsed?: boolean }) 
   );
 }
 
-export function SystemSidebarMenu({ isCollapsed = false }: { isCollapsed?: boolean }) {
+export function SystemSidebarMenu({ isCollapsed = false, onNavigate }: { isCollapsed?: boolean; onNavigate?: () => void }) {
   const { pathname } = useLocation();
 
   const matchPath = useCallback(
@@ -125,6 +126,7 @@ export function SystemSidebarMenu({ isCollapsed = false }: { isCollapsed?: boole
               const ItemContent = (
                 <Link
                   to={item.path}
+                  onClick={onNavigate}
                   className={cn(
                     "flex items-center grow gap-3 h-full w-full",
                     isCollapsed && "justify-center"

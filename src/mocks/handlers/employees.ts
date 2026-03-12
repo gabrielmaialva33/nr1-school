@@ -14,26 +14,28 @@ export const employeesHandlers = [
     let filtered = [...employees]
 
     if (status) filtered = filtered.filter(e => e.status === status)
-    if (envId) filtered = filtered.filter(e => e.environmentId === envId)
+    if (envId) filtered = filtered.filter(e => e.environment_id === envId)
     if (search) filtered = filtered.filter(e =>
       e.name.toLowerCase().includes(search) ||
       e.role.toLowerCase().includes(search)
     )
 
     const total = filtered.length
-    const start = (page - 1) * perPage
+    const lastPage = Math.max(1, Math.ceil(total / perPage))
+    const safePage = Math.min(page, lastPage)
+    const start = (safePage - 1) * perPage
     const data = filtered.slice(start, start + perPage)
 
     return HttpResponse.json({
       data,
-      meta: { total, page, perPage, lastPage: Math.ceil(total / perPage) },
+      meta: { total, current_page: safePage, per_page: perPage, last_page: lastPage, first_page: 1 },
     })
   }),
 
   http.get('/api/employees/:id', async ({ params }) => {
     await delay(200)
     const emp = employees.find(e => e.id === params.id)
-    if (!emp) return HttpResponse.json({ message: 'Funcionário não encontrado' }, { status: 404 })
+    if (!emp) return HttpResponse.json({ errors: [{ message: 'Funcionário não encontrado' }] }, { status: 404 })
     return HttpResponse.json(emp)
   }),
 ]

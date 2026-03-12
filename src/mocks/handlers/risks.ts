@@ -13,42 +13,44 @@ export const risksHandlers = [
 
     let filtered = [...risks]
 
-    if (level) filtered = filtered.filter(r => r.riskLevel === level)
+    if (level) filtered = filtered.filter(r => r.risk_level === level)
     if (status) filtered = filtered.filter(r => r.status === status)
     if (search) filtered = filtered.filter(r =>
       r.name.toLowerCase().includes(search) ||
-      r.categoryLabel.toLowerCase().includes(search) ||
-      r.environmentName.toLowerCase().includes(search)
+      r.category_label.toLowerCase().includes(search) ||
+      r.environment_name.toLowerCase().includes(search)
     )
 
     const total = filtered.length
-    const start = (page - 1) * perPage
+    const lastPage = Math.max(1, Math.ceil(total / perPage))
+    const safePage = Math.min(page, lastPage)
+    const start = (safePage - 1) * perPage
     const data = filtered.slice(start, start + perPage)
 
     return HttpResponse.json({
       data,
-      meta: { total, page, perPage, lastPage: Math.ceil(total / perPage) },
+      meta: { total, current_page: safePage, per_page: perPage, last_page: lastPage, first_page: 1 },
     })
   }),
 
   http.get('/api/risks/:id', async ({ params }) => {
     await delay(200)
     const risk = risks.find(r => r.id === params.id)
-    if (!risk) return HttpResponse.json({ message: 'Risco não encontrado' }, { status: 404 })
+    if (!risk) return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
     return HttpResponse.json(risk)
   }),
 
   http.post('/api/risks', async ({ request }) => {
     await delay(400)
     const body = await request.json()
-    return HttpResponse.json({ ...body, id: crypto.randomUUID(), createdAt: new Date().toISOString() }, { status: 201 })
+    return HttpResponse.json({ ...body, id: crypto.randomUUID(), created_at: new Date().toISOString() }, { status: 201 })
   }),
 
   http.put('/api/risks/:id', async ({ params, request }) => {
     await delay(300)
     const body = await request.json()
     const risk = risks.find(r => r.id === params.id)
-    if (!risk) return HttpResponse.json({ message: 'Risco não encontrado' }, { status: 404 })
+    if (!risk) return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
     return HttpResponse.json({ ...risk, ...body })
   }),
 
