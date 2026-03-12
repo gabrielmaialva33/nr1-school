@@ -19,7 +19,7 @@ export function AppRouting() {
     if (firstLoad) {
       setFirstLoad(false);
     }
-  });
+  }, [firstLoad]);
 
   useEffect(() => {
     if (!firstLoad) {

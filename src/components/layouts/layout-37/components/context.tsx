@@ -2,6 +2,17 @@ import { createContext, ReactNode, useContext, useEffect, useMemo, useState } fr
 import { useIsMobile } from '@/hooks/use-mobile';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
+const defaultCssVariables = {
+  '--sidebar-width': '240px',
+  '--sidebar-width-collapse': '60px',
+  '--sidebar-width-mobile': '240px',
+  '--header-height-mobile': '60px',
+  '--aside-width': '80px',
+  '--aside-width-mobile': '60px',
+  '--page-space': '10px',
+  '--mail-list-width': '300px',
+};
+
 // Define the shape of the layout state
 interface LayoutState {
   style: React.CSSProperties;
@@ -30,17 +41,6 @@ export function LayoutProvider({ children, style: customStyle, bodyClassName = '
   const isMobile = useIsMobile();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(sidebarCollapsed);
   const [isMailViewExpanded, setIsMailViewExpanded] = useState(false);
-
-  const defaultCssVariables = {
-    '--sidebar-width': '240px',
-    '--sidebar-width-collapse': '60px',
-    '--sidebar-width-mobile': '240px',
-    '--header-height-mobile': '60px',
-    '--aside-width': '80px',
-    '--aside-width-mobile': '60px',
-    '--page-space': '10px',
-    '--mail-list-width': '300px',
-  };
 
   const cssVariables = useMemo(() => ({
     ...defaultCssVariables,

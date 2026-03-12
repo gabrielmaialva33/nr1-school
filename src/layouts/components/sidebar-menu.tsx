@@ -95,16 +95,17 @@ export function SidebarMenu({ isCollapsed = false, onNavigate }: { isCollapsed?:
 
 export function SystemSidebarMenu({ isCollapsed = false, onNavigate }: { isCollapsed?: boolean; onNavigate?: () => void }) {
   const { pathname } = useLocation();
-
-  if (systemMenuConfig.length === 0) {
-    return null;
-  }
+  const hasSystemMenu = systemMenuConfig.length > 0;
 
   const matchPath = useCallback(
     (path: string): boolean =>
       path === pathname || (path.length > 1 && pathname.startsWith(path)),
     [pathname],
   );
+
+  if (!hasSystemMenu) {
+    return null;
+  }
 
   const classNames: AccordionMenuClassNames = {
     root: 'space-y-1',
