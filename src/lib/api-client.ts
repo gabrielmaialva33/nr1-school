@@ -1,8 +1,10 @@
 import { toAbsoluteUrl } from './helpers'
+import { clearTenantLocalCache, readLocalCache, type LocalCachePolicy, writeLocalCache } from './local-cache'
 import { getCurrentTenantId } from './tenant'
 
 interface ApiRequestInit extends RequestInit {
   tenantId?: string | null
+  localCache?: false | LocalCachePolicy
 }
 
 function resolveApiUrl(pathname: string) {
@@ -21,18 +23,43 @@ function resolveHeaders(init?: ApiRequestInit) {
 }
 
 export async function apiFetch(pathname: string, init?: ApiRequestInit) {
-  return fetch(resolveApiUrl(pathname), {
+  const tenantId = init?.tenantId ?? getCurrentTenantId()
+  const response = await fetch(resolveApiUrl(pathname), {
     ...init,
     headers: resolveHeaders(init),
   })
+
+  const method = (init?.method ?? 'GET').toUpperCase()
+  if (response.ok && method !== 'GET') {
+    clearTenantLocalCache(tenantId)
+  }
+
+  return response
 }
 
 export async function apiJson<T>(pathname: string, init?: ApiRequestInit) {
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const tenantId = init?.tenantId ?? getCurrentTenantId()
+  const localCachePolicy = init?.localCache === undefined ? {} : init.localCache
+
+  if (method === 'GET' && localCachePolicy !== false) {
+    const cached = readLocalCache<T>(pathname, tenantId)
+    if (cached) {
+      return cached
+    }
+  }
+
   const response = await apiFetch(pathname, init)
 
   if (!response.ok) {
     throw new Error(`Falha na requisição para ${pathname}`)
   }
 
-  return response.json() as Promise<T>
+  const payload = await response.json() as T
+
+  if (method === 'GET' && localCachePolicy !== false) {
+    writeLocalCache(pathname, tenantId, payload, localCachePolicy)
+  }
+
+  return payload
 }

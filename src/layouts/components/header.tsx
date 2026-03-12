@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Menu, Search, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetBody, SheetTitle } from '@/components/ui/sheet';
@@ -23,6 +23,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toAbsoluteUrl } from '@/lib/helpers';
 import { Shield } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
+import { fetchAuthSession, switchTenantSession, type AuthSessionPayload } from '@/services/auth';
+import { fetchTenants, type TenantSummary } from '@/services/tenants';
+import { getCurrentTenantId, setCurrentTenantId } from '@/lib/tenant';
+import { toast } from 'sonner';
 
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',
@@ -39,18 +43,57 @@ const routeLabels: Record<string, string> = {
 };
 
 export function Header({
-  isSidebarCollapsed,
   toggleSidebar,
 }: {
-  isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
 }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [session, setSession] = useState<AuthSessionPayload | null>(null);
+  const [tenants, setTenants] = useState<TenantSummary[]>([]);
+  const [isSwitchingTenant, setIsSwitchingTenant] = useState(false);
   const location = useLocation();
 
   const pathnames = location.pathname.split('/').filter((x) => x);
   const currentPath = pathnames[pathnames.length - 1] ?? '';
-  const currentLabel = routeLabels[currentPath] ?? currentPath.replace(/-/g, ' ');
+  const currentLabel =
+    pathnames[0] === 'employees' && pathnames.length > 1
+      ? 'Perfil do Funcionário'
+      : routeLabels[currentPath] ?? currentPath.replace(/-/g, ' ');
+  const currentTenantId = getCurrentTenantId();
+
+  useEffect(() => {
+    let active = true;
+
+    Promise.all([fetchAuthSession(), fetchTenants()])
+      .then(([currentSession, availableTenants]) => {
+        if (!active) return;
+        setSession(currentSession);
+        setTenants(availableTenants);
+      })
+      .catch(() => {
+        if (!active) return;
+        setTenants([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleTenantSwitch(tenantId: string) {
+    if (tenantId === currentTenantId || isSwitchingTenant) return;
+
+    try {
+      setIsSwitchingTenant(true);
+      await switchTenantSession(tenantId);
+      setCurrentTenantId(tenantId);
+      window.location.reload();
+    } catch {
+      toast.error('Não foi possível alternar a unidade demo');
+    } finally {
+      setIsSwitchingTenant(false);
+    }
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b border-border/70 bg-background/85 px-4 backdrop-blur-xl md:px-6">
@@ -139,12 +182,38 @@ export function Header({
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Usuário Demo</p>
+                <p className="text-sm font-medium leading-none">{session?.user?.name ?? 'Usuário Demo'}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  admin@nr1school.com
+                  {session?.user?.email ?? 'admin@nr1school.com'}
                 </p>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tenant</p>
+                <p className="text-sm font-medium leading-none">{session?.school?.name ?? 'Unidade Demo'}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {session?.school ? `${session.school.city} • ${session.school.state}` : 'Sem contexto'}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {tenants.map((tenant) => (
+              <DropdownMenuItem
+                key={tenant.id}
+                disabled={tenant.id === currentTenantId || isSwitchingTenant}
+                className="cursor-pointer"
+                onClick={() => handleTenantSwitch(tenant.id)}
+              >
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{tenant.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {tenant.city} • {tenant.state} • {tenant.employee_count} colaboradores
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive cursor-pointer">Sair</DropdownMenuItem>
           </DropdownMenuContent>

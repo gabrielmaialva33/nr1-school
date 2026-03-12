@@ -1,4 +1,5 @@
 import { apiFetch } from './api-client'
+import { clearAllLocalCache } from './local-cache'
 
 const ACTIVE_TENANT_STORAGE_KEY = 'nr1-school.active-tenant-id'
 
@@ -13,6 +14,10 @@ export function getCurrentTenantId(): string | null {
 
 export function setCurrentTenantId(tenantId: string) {
   if (!canUseBrowserStorage()) return
+  const currentTenantId = getCurrentTenantId()
+  if (currentTenantId && currentTenantId !== tenantId) {
+    clearAllLocalCache()
+  }
   window.localStorage.setItem(ACTIVE_TENANT_STORAGE_KEY, tenantId)
 }
 

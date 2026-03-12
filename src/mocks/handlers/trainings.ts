@@ -1,18 +1,21 @@
 import { addMonths } from 'date-fns'
-import { http, HttpResponse, delay } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { mockApi } from '../api'
-import { trainings } from '../data/factory'
+import { paginate, requireTenantSnapshot, sortByCreatedAtDesc } from './utils'
 
 export const trainingsHandlers = [
   http.get(mockApi('/api/trainings'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
+    const { snapshot } = requireTenantSnapshot(request)
+    if (!snapshot) {
+      return HttpResponse.json({ errors: [{ message: 'Tenant não encontrado' }] }, { status: 404 })
+    }
+
     const search = url.searchParams.get('search')?.toLowerCase()
     const status = url.searchParams.get('status')
-    const page = Number(url.searchParams.get('page') || '1')
-    const perPage = Number(url.searchParams.get('per_page') || '10')
 
-    const normalizedTrainings = trainings.map(training => ({
+    const normalizedTrainings = sortByCreatedAtDesc(snapshot.trainings).map(training => ({
       ...training,
       validity_date: addMonths(new Date(training.scheduled_date), training.validity_months).toISOString().split('T')[0],
     }))
@@ -27,21 +30,11 @@ export const trainingsHandlers = [
     }
     if (status) filtered = filtered.filter(training => training.status === status)
 
-    const total = filtered.length
-    const lastPage = Math.max(1, Math.ceil(total / perPage))
-    const safePage = Math.min(page, lastPage)
-    const start = (safePage - 1) * perPage
-    const data = filtered.slice(start, start + perPage)
+    const { data, meta } = paginate(filtered, request, { perPage: 10 })
 
     return HttpResponse.json({
       data,
-      meta: {
-        total,
-        current_page: safePage,
-        per_page: perPage,
-        last_page: lastPage,
-        first_page: 1,
-      },
+      meta,
     })
   }),
 ]

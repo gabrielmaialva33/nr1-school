@@ -21,10 +21,7 @@ export function AppLayout() {
           isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}
       >
-        <Header 
-          isSidebarCollapsed={isSidebarCollapsed} 
-          toggleSidebar={toggleSidebar} 
-        />
+        <Header toggleSidebar={toggleSidebar} />
         
         <main className="flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 md:px-6 md:py-6 lg:px-8 lg:py-8">
           <div className="page-shell">

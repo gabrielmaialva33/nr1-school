@@ -1,62 +1,115 @@
-import { http, HttpResponse, delay } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { mockApi } from '../api'
-import { risks } from '../data/factory'
+import { updateMockDb } from '../data/database'
+import { paginate, requireTenantSnapshot, resolveTenantId, sortByCreatedAtDesc } from './utils'
 
 export const risksHandlers = [
   http.get(mockApi('/api/risks'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
+    const { snapshot } = requireTenantSnapshot(request)
+    if (!snapshot) {
+      return HttpResponse.json({ errors: [{ message: 'Tenant não encontrado' }] }, { status: 404 })
+    }
+
     const level = url.searchParams.get('level')
     const status = url.searchParams.get('status')
     const search = url.searchParams.get('search')?.toLowerCase()
-    const page = Number(url.searchParams.get('page') || '1')
-    const perPage = Number(url.searchParams.get('per_page') || '10')
 
-    let filtered = [...risks]
+    let filtered = sortByCreatedAtDesc(snapshot.risks)
 
-    if (level) filtered = filtered.filter(r => r.risk_level === level)
-    if (status) filtered = filtered.filter(r => r.status === status)
-    if (search) filtered = filtered.filter(r =>
-      r.name.toLowerCase().includes(search) ||
-      r.category_label.toLowerCase().includes(search) ||
-      r.environment_name.toLowerCase().includes(search)
-    )
+    if (level) filtered = filtered.filter((risk) => risk.risk_level === level)
+    if (status) filtered = filtered.filter((risk) => risk.status === status)
+    if (search) {
+      filtered = filtered.filter((risk) =>
+        risk.name.toLowerCase().includes(search) ||
+        risk.category_label.toLowerCase().includes(search) ||
+        risk.environment_name.toLowerCase().includes(search),
+      )
+    }
 
-    const total = filtered.length
-    const lastPage = Math.max(1, Math.ceil(total / perPage))
-    const safePage = Math.min(page, lastPage)
-    const start = (safePage - 1) * perPage
-    const data = filtered.slice(start, start + perPage)
+    const { data, meta } = paginate(filtered, request, { perPage: 10 })
 
     return HttpResponse.json({
       data,
-      meta: { total, current_page: safePage, per_page: perPage, last_page: lastPage, first_page: 1 },
+      meta,
     })
   }),
 
-  http.get(mockApi('/api/risks/:id'), async ({ params }) => {
+  http.get(mockApi('/api/risks/:id'), async ({ params, request }) => {
     await delay(200)
-    const risk = risks.find(r => r.id === params.id)
+    const risk = requireTenantSnapshot(request).snapshot?.risks.find((record) => record.id === params.id)
     if (!risk) return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
     return HttpResponse.json(risk)
   }),
 
   http.post(mockApi('/api/risks'), async ({ request }) => {
     await delay(400)
-    const body = await request.json()
-    return HttpResponse.json({ ...body, id: crypto.randomUUID(), created_at: new Date().toISOString() }, { status: 201 })
+
+    const tenantId = resolveTenantId(request)
+    const payload = await request.json() as Record<string, unknown>
+
+    const createdRisk = {
+      ...payload,
+      id: crypto.randomUUID(),
+      school_id: tenantId,
+      created_at: new Date().toISOString(),
+    }
+
+    updateMockDb((current) => {
+      current.risks.unshift(createdRisk as typeof current.risks[number])
+      return current
+    })
+
+    return HttpResponse.json(createdRisk, { status: 201 })
   }),
 
   http.put(mockApi('/api/risks/:id'), async ({ params, request }) => {
     await delay(300)
-    const body = await request.json()
-    const risk = risks.find(r => r.id === params.id)
-    if (!risk) return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
-    return HttpResponse.json({ ...risk, ...body })
+
+    const tenantId = resolveTenantId(request)
+    const payload = await request.json() as Record<string, unknown>
+    let updatedRisk: typeof payload | null = null
+
+    updateMockDb((current) => {
+      current.risks = current.risks.map((risk) => {
+        if (risk.id !== params.id || risk.school_id !== tenantId) {
+          return risk
+        }
+
+        updatedRisk = { ...risk, ...payload }
+        return updatedRisk as typeof risk
+      })
+
+      return current
+    })
+
+    if (!updatedRisk) {
+      return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
+    }
+
+    return HttpResponse.json(updatedRisk)
   }),
 
-  http.delete(mockApi('/api/risks/:id'), async ({ params }) => {
+  http.delete(mockApi('/api/risks/:id'), async ({ params, request }) => {
     await delay(200)
+
+    const tenantId = resolveTenantId(request)
+    let deleted = false
+
+    updateMockDb((current) => {
+      const previousLength = current.risks.length
+      current.risks = current.risks.filter(
+        (risk) => !(risk.id === params.id && risk.school_id === tenantId),
+      )
+      deleted = current.risks.length !== previousLength
+      return current
+    })
+
+    if (!deleted) {
+      return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
+    }
+
     return HttpResponse.json({ message: 'Risco removido', id: params.id })
   }),
 ]

@@ -97,6 +97,7 @@ export function LoginPage() {
                 <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
                 <input
                   type="email"
+                  autoComplete="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="seu@email.com"
@@ -117,6 +118,7 @@ export function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#64748b]" />
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -145,7 +147,7 @@ export function LoginPage() {
             </button>
 
             <p className="text-center text-xs text-[#64748b]">
-              Demo: <span className="font-mono">demo@nr1.school</span> / <span className="font-mono">demo123</span>
+              Demo: <span className="font-mono">ana.mendes@mariahelena.demo.br</span> / <span className="font-mono">demo123</span>
             </p>
           </form>
         </div>

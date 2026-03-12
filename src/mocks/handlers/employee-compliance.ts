@@ -1,31 +1,17 @@
 import { addMonths } from 'date-fns'
 import { delay, http, HttpResponse } from 'msw'
 import { mockApi } from '../api'
-import {
-  employeeComplianceDocuments,
-  employeePpeDeliveries,
-  employeeTrainingEnrollments,
-  employees,
-  school,
-  trainings,
-} from '../data/factory'
+import { getMockDb, updateMockDb } from '../data/database'
+import { requireTenantSnapshot, resolveTenantId } from './utils'
 
 type ComplianceDocumentType = 'training_certificate' | 'ppe_delivery_receipt'
-
-function resolveTenantId(request: Request) {
-  return (
-    request.headers.get('x-tenant-id') ||
-    new URL(request.url).searchParams.get('tenant_id') ||
-    school.id
-  )
-}
 
 function computeOpenRequirements(documentCount: number) {
   return Math.max(0, 2 - Math.min(documentCount, 2))
 }
 
 function computeExpiringDocuments(documents: Array<{ status: string }>) {
-  return documents.filter(document => document.status === 'expiring_soon').length
+  return documents.filter((document) => document.status === 'expiring_soon').length
 }
 
 export const employeeComplianceHandlers = [
@@ -33,29 +19,30 @@ export const employeeComplianceHandlers = [
     await delay(300)
 
     const tenantId = resolveTenantId(request)
-    const employee = employees.find(record => record.id === params.id)
+    const snapshot = requireTenantSnapshot(request).snapshot
+    const employee = snapshot?.employees.find((record) => record.id === params.id)
 
-    if (!employee || employee.school_id !== tenantId) {
+    if (!employee || !snapshot) {
       return HttpResponse.json(
         { errors: [{ message: 'Funcionário não encontrado para o tenant informado' }] },
         { status: 404 },
       )
     }
 
-    const trainingEnrollments = employeeTrainingEnrollments.filter(
-      record => record.employee_id === employee.id && record.tenant_id === tenantId,
+    const trainingEnrollments = snapshot.employee_training_enrollments.filter(
+      (record) => record.employee_id === employee.id,
     )
-    const ppeDeliveries = employeePpeDeliveries.filter(
-      record => record.employee_id === employee.id && record.tenant_id === tenantId,
+    const ppeDeliveries = snapshot.employee_ppe_deliveries.filter(
+      (record) => record.employee_id === employee.id,
     )
-    const complianceDocuments = employeeComplianceDocuments.filter(
-      record => record.employee_id === employee.id && record.tenant_id === tenantId,
+    const complianceDocuments = snapshot.employee_compliance_documents.filter(
+      (record) => record.employee_id === employee.id,
     )
 
     const referencedTrainingIds = Array.from(
-      new Set(trainingEnrollments.map(record => record.training_id)),
+      new Set(trainingEnrollments.map((record) => record.training_id)),
     )
-    const trainingCatalog = trainings.filter(training =>
+    const trainingCatalog = snapshot.trainings.filter((training) =>
       referencedTrainingIds.includes(training.id),
     )
 
@@ -90,16 +77,19 @@ export const employeeComplianceHandlers = [
     await delay(400)
 
     const tenantId = resolveTenantId(request)
-    const employee = employees.find(record => record.id === params.id)
+    const database = getMockDb()
+    const employee = database.employees.find(
+      (record) => record.id === params.id && record.school_id === tenantId,
+    )
 
-    if (!employee || employee.school_id !== tenantId) {
+    if (!employee) {
       return HttpResponse.json(
         { errors: [{ message: 'Funcionário não encontrado para o tenant informado' }] },
         { status: 404 },
       )
     }
 
-    const payload = await request.json() as {
+    const payload = (await request.json()) as {
       tenant_id?: string
       document_type: ComplianceDocumentType
       training_id?: string | null
@@ -123,96 +113,109 @@ export const employeeComplianceHandlers = [
     let trainingEnrollmentId: string | null = null
     let ppeDeliveryId: string | null = null
 
-    if (payload.document_type === 'training_certificate') {
-      if (!payload.training_id) {
-        return HttpResponse.json(
-          { errors: [{ message: 'training_id é obrigatório para certificado de treinamento' }] },
-          { status: 422 },
-        )
-      }
+    const targetTenantId = payload.tenant_id ?? tenantId
 
-      const selectedTraining = trainings.find(training => training.id === payload.training_id)
-      if (!selectedTraining) {
-        return HttpResponse.json(
-          { errors: [{ message: 'Treinamento informado não encontrado' }] },
-          { status: 404 },
-        )
-      }
+    try {
+      updateMockDb((current) => {
+        if (payload.document_type === 'training_certificate') {
+          if (!payload.training_id) {
+            throw new Error('training_id é obrigatório para certificado de treinamento')
+          }
 
-      const existingEnrollment = employeeTrainingEnrollments.find(
-        record =>
-          record.employee_id === employee.id &&
-          record.tenant_id === tenantId &&
-          record.training_id === payload.training_id,
-      )
+          const selectedTraining = current.trainings.find(
+            (training) => training.id === payload.training_id && training.school_id === targetTenantId,
+          )
 
-      if (existingEnrollment) {
-        trainingEnrollmentId = existingEnrollment.id
-      } else {
-        const createdEnrollment = {
-          id: crypto.randomUUID(),
-          tenant_id: tenantId,
-          employee_id: employee.id,
-          training_id: selectedTraining.id,
-          status: 'completed' as const,
-          completed_at: payload.issued_at,
-          valid_until: payload.expires_at ?? addMonths(new Date(`${payload.issued_at}T00:00:00`), selectedTraining.validity_months).toISOString().split('T')[0],
-          instructor_name: selectedTraining.instructor,
-          created_at: new Date().toISOString(),
+          if (!selectedTraining) {
+            throw new Error('Treinamento informado não encontrado')
+          }
+
+          const existingEnrollment = current.employee_training_enrollments.find(
+            (record) =>
+              record.employee_id === employee.id &&
+              record.tenant_id === targetTenantId &&
+              record.training_id === payload.training_id,
+          )
+
+          if (existingEnrollment) {
+            trainingEnrollmentId = existingEnrollment.id
+          } else {
+            const createdEnrollment = {
+              id: crypto.randomUUID(),
+              tenant_id: targetTenantId,
+              employee_id: employee.id,
+              training_id: selectedTraining.id,
+              status: 'completed' as const,
+              completed_at: payload.issued_at,
+              valid_until:
+                payload.expires_at ??
+                addMonths(
+                  new Date(`${payload.issued_at}T00:00:00`),
+                  selectedTraining.validity_months,
+                )
+                  .toISOString()
+                  .split('T')[0],
+              instructor_name: selectedTraining.instructor,
+              created_at: new Date().toISOString(),
+            }
+
+            current.employee_training_enrollments.unshift(createdEnrollment)
+            trainingEnrollmentId = createdEnrollment.id
+          }
         }
 
-        employeeTrainingEnrollments.unshift(createdEnrollment)
-        trainingEnrollmentId = createdEnrollment.id
-      }
+        if (payload.document_type === 'ppe_delivery_receipt') {
+          if (!payload.equipment_name) {
+            throw new Error('equipment_name é obrigatório para comprovante de EPI')
+          }
+
+          const createdDelivery = {
+            id: crypto.randomUUID(),
+            tenant_id: targetTenantId,
+            employee_id: employee.id,
+            item_name: payload.equipment_name,
+            ca_number: payload.ca_number ?? 'CA não informado',
+            delivered_at: payload.issued_at,
+            next_replacement_at: payload.expires_at ?? null,
+            signed_at: payload.issued_at,
+            created_at: new Date().toISOString(),
+          }
+
+          current.employee_ppe_deliveries.unshift(createdDelivery)
+          ppeDeliveryId = createdDelivery.id
+        }
+
+        current.employee_compliance_documents.unshift({
+          id: crypto.randomUUID(),
+          tenant_id: targetTenantId,
+          employee_id: employee.id,
+          training_enrollment_id: trainingEnrollmentId,
+          ppe_delivery_id: ppeDeliveryId,
+          document_type: payload.document_type,
+          file_name: payload.file_name,
+          mime_type: payload.mime_type,
+          file_size_bytes: payload.file_size_bytes,
+          issued_at: payload.issued_at,
+          expires_at: payload.expires_at ?? null,
+          status: payload.expires_at ? 'validated' : 'pending_validation',
+          notes: payload.notes ?? null,
+          uploaded_at: new Date().toISOString(),
+        })
+
+        return current
+      })
+    } catch (error) {
+      return HttpResponse.json(
+        {
+          errors: [{ message: error instanceof Error ? error.message : 'Falha ao registrar documento' }],
+        },
+        { status: 422 },
+      )
     }
-
-    if (payload.document_type === 'ppe_delivery_receipt') {
-      if (!payload.equipment_name) {
-        return HttpResponse.json(
-          { errors: [{ message: 'equipment_name é obrigatório para comprovante de EPI' }] },
-          { status: 422 },
-        )
-      }
-
-      const createdDelivery = {
-        id: crypto.randomUUID(),
-        tenant_id: tenantId,
-        employee_id: employee.id,
-        item_name: payload.equipment_name,
-        ca_number: payload.ca_number ?? 'CA não informado',
-        delivered_at: payload.issued_at,
-        next_replacement_at: payload.expires_at ?? null,
-        signed_at: payload.issued_at,
-        created_at: new Date().toISOString(),
-      }
-
-      employeePpeDeliveries.unshift(createdDelivery)
-      ppeDeliveryId = createdDelivery.id
-    }
-
-    const createdDocument = {
-      id: crypto.randomUUID(),
-      tenant_id: payload.tenant_id ?? tenantId,
-      employee_id: employee.id,
-      training_enrollment_id: trainingEnrollmentId,
-      ppe_delivery_id: ppeDeliveryId,
-      document_type: payload.document_type,
-      file_name: payload.file_name,
-      mime_type: payload.mime_type,
-      file_size_bytes: payload.file_size_bytes,
-      issued_at: payload.issued_at,
-      expires_at: payload.expires_at ?? null,
-      status: payload.expires_at ? 'validated' : 'pending_validation',
-      notes: payload.notes ?? null,
-      uploaded_at: new Date().toISOString(),
-    }
-
-    employeeComplianceDocuments.unshift(createdDocument)
 
     return HttpResponse.json(
       {
         message: 'Documento registrado com sucesso',
-        document: createdDocument,
       },
       { status: 201 },
     )
