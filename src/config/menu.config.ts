@@ -10,8 +10,6 @@ import {
   GraduationCap,
   MessageSquareWarning,
   FileText,
-  UserCog,
-  Settings,
   LucideIcon
 } from 'lucide-react';
 
@@ -60,7 +58,4 @@ export const menuConfig: MenuGroup[] = [
   },
 ];
 
-export const systemMenuConfig: MenuItem[] = [
-  { title: 'Gestão de Usuários', icon: UserCog, path: '/users' },
-  { title: 'Configurações', icon: Settings, path: '/settings' },
-];
+export const systemMenuConfig: MenuItem[] = [];

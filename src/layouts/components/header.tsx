@@ -36,8 +36,6 @@ const routeLabels: Record<string, string> = {
   trainings: 'Treinamentos',
   complaints: 'Denúncias',
   reports: 'Relatórios',
-  users: 'Gestão de Usuários',
-  settings: 'Configurações',
 };
 
 export function Header({
@@ -147,10 +145,6 @@ export function Header({
                 </p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/settings" className="cursor-pointer">Configurações</Link>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive cursor-pointer">Sair</DropdownMenuItem>
           </DropdownMenuContent>

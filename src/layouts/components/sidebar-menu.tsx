@@ -96,6 +96,10 @@ export function SidebarMenu({ isCollapsed = false, onNavigate }: { isCollapsed?:
 export function SystemSidebarMenu({ isCollapsed = false, onNavigate }: { isCollapsed?: boolean; onNavigate?: () => void }) {
   const { pathname } = useLocation();
 
+  if (systemMenuConfig.length === 0) {
+    return null;
+  }
+
   const matchPath = useCallback(
     (path: string): boolean =>
       path === pathname || (path.length > 1 && pathname.startsWith(path)),

@@ -14,7 +14,6 @@ const MedicalCertificatesPage = lazy(() => import('@/pages/medical-certificates/
 const TrainingsPage = lazy(() => import('@/pages/trainings/page').then(m => ({ default: m.TrainingsPage })))
 const ComplaintsPage = lazy(() => import('@/pages/complaints/page').then(m => ({ default: m.ComplaintsPage })))
 const ReportsPage = lazy(() => import('@/pages/reports/page').then(m => ({ default: m.ReportsPage })))
-const PlaceholderPage = lazy(() => import('@/pages/placeholder').then(m => ({ default: m.PlaceholderPage })))
 
 function PageLoader() {
   return (
@@ -44,8 +43,8 @@ export function AppRoutingSetup() {
           <Route path="/trainings" element={<TrainingsPage />} />
           <Route path="/complaints" element={<ComplaintsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/users" element={<PlaceholderPage title="Gestão de Usuários" />} />
-          <Route path="/settings" element={<PlaceholderPage title="Configurações" />} />
+          <Route path="/users" element={<Navigate to="/employees" replace />} />
+          <Route path="/settings" element={<Navigate to="/reports" replace />} />
         </Route>
 
         {/* Fallback */}
