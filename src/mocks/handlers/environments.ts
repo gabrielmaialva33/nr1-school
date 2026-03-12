@@ -1,8 +1,9 @@
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 import { environments } from '../data/factory'
 
 export const environmentsHandlers = [
-  http.get('/api/environments', async ({ request }) => {
+  http.get(mockApi('/api/environments'), async ({ request }) => {
     await delay(200)
     const url = new URL(request.url)
     const page = Number(url.searchParams.get('page') || '1')
@@ -36,7 +37,7 @@ export const environmentsHandlers = [
     })
   }),
 
-  http.get('/api/environments/:id', async ({ params }) => {
+  http.get(mockApi('/api/environments/:id'), async ({ params }) => {
     await delay(200)
     const env = environments.find(e => e.id === params.id)
     if (!env) return HttpResponse.json({ errors: [{ message: 'Setor não encontrado' }] }, { status: 404 })

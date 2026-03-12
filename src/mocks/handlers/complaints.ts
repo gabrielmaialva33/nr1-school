@@ -1,8 +1,9 @@
 import { delay, http, HttpResponse } from 'msw'
+import { mockApi } from '../api'
 import { complaints } from '../data/factory'
 
 export const complaintsHandlers = [
-  http.get('/api/complaints', async ({ request }) => {
+  http.get(mockApi('/api/complaints'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const search = url.searchParams.get('search')?.toLowerCase()

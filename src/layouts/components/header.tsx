@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarMenu, SystemSidebarMenu } from './sidebar-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toAbsoluteUrl } from '@/lib/helpers';
 import { Shield } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 
@@ -132,7 +133,7 @@ export function Header({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative ml-1 h-9 w-9 rounded-full ring-1 ring-border/70 transition-shadow hover:shadow-sm">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/media/avatars/300-1.png" alt="@user" />
+                <AvatarImage src={toAbsoluteUrl('/media/avatars/300-1.png')} alt="@user" />
                 <AvatarFallback>NR</AvatarFallback>
               </Avatar>
             </Button>

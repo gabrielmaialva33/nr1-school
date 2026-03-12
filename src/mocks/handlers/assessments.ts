@@ -1,4 +1,5 @@
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 
 const assessments = [
   {
@@ -108,7 +109,7 @@ const assessments = [
 ]
 
 export const assessmentsHandlers = [
-  http.get('/api/assessments', async ({ request }) => {
+  http.get(mockApi('/api/assessments'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const page = Number(url.searchParams.get('page') || '1')
@@ -132,7 +133,7 @@ export const assessmentsHandlers = [
     })
   }),
 
-  http.get('/api/assessments/:id', async ({ params }) => {
+  http.get(mockApi('/api/assessments/:id'), async ({ params }) => {
     await delay(200)
     const assessment = assessments.find(a => a.id === params.id)
     if (!assessment) return HttpResponse.json({ errors: [{ message: 'Campanha não encontrada' }] }, { status: 404 })

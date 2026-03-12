@@ -1,8 +1,9 @@
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 import { risks } from '../data/factory'
 
 export const risksHandlers = [
-  http.get('/api/risks', async ({ request }) => {
+  http.get(mockApi('/api/risks'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const level = url.searchParams.get('level')
@@ -33,20 +34,20 @@ export const risksHandlers = [
     })
   }),
 
-  http.get('/api/risks/:id', async ({ params }) => {
+  http.get(mockApi('/api/risks/:id'), async ({ params }) => {
     await delay(200)
     const risk = risks.find(r => r.id === params.id)
     if (!risk) return HttpResponse.json({ errors: [{ message: 'Risco não encontrado' }] }, { status: 404 })
     return HttpResponse.json(risk)
   }),
 
-  http.post('/api/risks', async ({ request }) => {
+  http.post(mockApi('/api/risks'), async ({ request }) => {
     await delay(400)
     const body = await request.json()
     return HttpResponse.json({ ...body, id: crypto.randomUUID(), created_at: new Date().toISOString() }, { status: 201 })
   }),
 
-  http.put('/api/risks/:id', async ({ params, request }) => {
+  http.put(mockApi('/api/risks/:id'), async ({ params, request }) => {
     await delay(300)
     const body = await request.json()
     const risk = risks.find(r => r.id === params.id)
@@ -54,7 +55,7 @@ export const risksHandlers = [
     return HttpResponse.json({ ...risk, ...body })
   }),
 
-  http.delete('/api/risks/:id', async ({ params }) => {
+  http.delete(mockApi('/api/risks/:id'), async ({ params }) => {
     await delay(200)
     return HttpResponse.json({ message: 'Risco removido', id: params.id })
   }),

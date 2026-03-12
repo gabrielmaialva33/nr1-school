@@ -1,8 +1,9 @@
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 import { actionPlans } from '../data/factory'
 
 export const actionPlansHandlers = [
-  http.get('/api/action-plans', async ({ request }) => {
+  http.get(mockApi('/api/action-plans'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const page = Number(url.searchParams.get('page') || '1')
@@ -36,7 +37,7 @@ export const actionPlansHandlers = [
     })
   }),
 
-  http.get('/api/action-plans/:id', async ({ params }) => {
+  http.get(mockApi('/api/action-plans/:id'), async ({ params }) => {
     await delay(200)
     const plan = actionPlans.find(p => p.id === params.id)
     if (!plan) return HttpResponse.json({ errors: [{ message: 'Plano não encontrado' }] }, { status: 404 })

@@ -1,9 +1,10 @@
 import { addMonths } from 'date-fns'
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 import { trainings } from '../data/factory'
 
 export const trainingsHandlers = [
-  http.get('/api/trainings', async ({ request }) => {
+  http.get(mockApi('/api/trainings'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const search = url.searchParams.get('search')?.toLowerCase()

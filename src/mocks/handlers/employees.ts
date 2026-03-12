@@ -1,8 +1,9 @@
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 import { employees } from '../data/factory'
 
 export const employeesHandlers = [
-  http.get('/api/employees', async ({ request }) => {
+  http.get(mockApi('/api/employees'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const status = url.searchParams.get('status')
@@ -32,7 +33,7 @@ export const employeesHandlers = [
     })
   }),
 
-  http.get('/api/employees/:id', async ({ params }) => {
+  http.get(mockApi('/api/employees/:id'), async ({ params }) => {
     await delay(200)
     const emp = employees.find(e => e.id === params.id)
     if (!emp) return HttpResponse.json({ errors: [{ message: 'Funcionário não encontrado' }] }, { status: 404 })

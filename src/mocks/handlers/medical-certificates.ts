@@ -1,8 +1,9 @@
 import { delay, http, HttpResponse } from 'msw'
+import { mockApi } from '../api'
 import { medicalCertificates } from '../data/factory'
 
 export const medicalCertificatesHandlers = [
-  http.get('/api/medical-certificates', async ({ request }) => {
+  http.get(mockApi('/api/medical-certificates'), async ({ request }) => {
     await delay(300)
     const url = new URL(request.url)
     const search = url.searchParams.get('search')?.toLowerCase()

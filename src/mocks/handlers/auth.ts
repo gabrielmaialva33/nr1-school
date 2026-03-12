@@ -1,8 +1,9 @@
 import { http, HttpResponse, delay } from 'msw'
+import { mockApi } from '../api'
 import { currentUser } from '../data/factory'
 
 export const authHandlers = [
-  http.post('/api/auth/login', async ({ request }) => {
+  http.post(mockApi('/api/auth/login'), async ({ request }) => {
     await delay(500)
     const body = await request.json() as { email: string; password: string }
 
@@ -19,12 +20,12 @@ export const authHandlers = [
     )
   }),
 
-  http.post('/api/auth/logout', async () => {
+  http.post(mockApi('/api/auth/logout'), async () => {
     await delay(200)
     return HttpResponse.json({ message: 'Logout realizado' })
   }),
 
-  http.get('/api/auth/me', async () => {
+  http.get(mockApi('/api/auth/me'), async () => {
     await delay(200)
     return HttpResponse.json({ user: currentUser })
   }),
