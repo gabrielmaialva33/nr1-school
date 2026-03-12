@@ -16,19 +16,6 @@
       .dark body { background-color: #0f172a; }
     </style>
     <script>
-      (function (location) {
-        if (location.search.startsWith('?/')) {
-          const normalizedPath = location.search
-            .slice(1)
-            .split('&')
-            .map((segment) => segment.replace(/~and~/g, '&'))
-            .join('?');
-
-          window.history.replaceState(null, '', `${location.pathname.slice(0, -1)}${normalizedPath}${location.hash}`);
-        }
-      })(window.location);
-    </script>
-    <script>
       (function () {
         try {
           const theme = localStorage.getItem('theme') || 'light';

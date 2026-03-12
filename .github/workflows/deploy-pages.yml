@@ -62,14 +62,14 @@ jobs:
                   const segmentCount = ${SEGMENT_COUNT};
                   const basePath = location.pathname.split('/').slice(0, 1 + segmentCount).join('/');
                   const routePath = location.pathname.slice(basePath.length).replace(/^\/?/, '/');
-                  const query = location.search ? '&' + location.search.slice(1).replace(/&/g, '~and~') : '';
+                  const query = location.search || '';
                   const redirectUrl =
                     location.protocol +
                     '//' +
                     location.host +
                     basePath +
-                    '/?' +
-                    routePath.replace(/&/g, '~and~') +
+                    '/#' +
+                    routePath +
                     query +
                     location.hash;
 
