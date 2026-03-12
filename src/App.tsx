@@ -6,6 +6,7 @@ import { LoadingBarContainer } from 'react-top-loading-bar';
 import { Toaster } from '@/components/ui/sonner';
 
 const { BASE_URL } = import.meta.env;
+const routerBaseName = BASE_URL === '/' ? '/' : BASE_URL.replace(/\/$/, '')
 
 export function App() {
   return (
@@ -19,7 +20,7 @@ export function App() {
     >
       <HelmetProvider>
         <LoadingBarContainer>
-          <BrowserRouter basename={BASE_URL}>
+          <BrowserRouter basename={routerBaseName}>
             <Toaster />
             <AppRouting />
           </BrowserRouter>
