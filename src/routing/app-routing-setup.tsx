@@ -15,6 +15,7 @@ const MedicalCertificatesPage = lazy(() => import('@/pages/medical-certificates/
 const TrainingsPage = lazy(() => import('@/pages/trainings/page').then(m => ({ default: m.TrainingsPage })))
 const ComplaintsPage = lazy(() => import('@/pages/complaints/page').then(m => ({ default: m.ComplaintsPage })))
 const ReportsPage = lazy(() => import('@/pages/reports/page').then(m => ({ default: m.ReportsPage })))
+const OnboardingPage = lazy(() => import('@/pages/onboarding/page').then(m => ({ default: m.OnboardingPage })))
 
 function PageLoader() {
   return (
@@ -45,6 +46,7 @@ export function AppRoutingSetup() {
           <Route path="/trainings" element={<TrainingsPage />} />
           <Route path="/complaints" element={<ComplaintsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/users" element={<Navigate to="/employees" replace />} />
           <Route path="/settings" element={<Navigate to="/reports" replace />} />
         </Route>

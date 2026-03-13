@@ -10,6 +10,7 @@ import {
   GraduationCap,
   MessageSquareWarning,
   FileText,
+  Orbit,
   LucideIcon
 } from 'lucide-react';
 
@@ -29,6 +30,7 @@ export const menuConfig: MenuGroup[] = [
     title: 'Principal',
     items: [
       { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
+      { title: 'Onboarding', icon: Orbit, path: '/onboarding' },
       { title: 'Setores', icon: Building2, path: '/environments' },
       { title: 'Funcionários', icon: Users, path: '/employees' },
     ],
