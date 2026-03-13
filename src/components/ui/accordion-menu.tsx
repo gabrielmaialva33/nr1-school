@@ -229,6 +229,15 @@ function AccordionMenuItem({
           data-slot="accordion-menu-item"
           className={cn(itemVariants({ variant }), classNames?.item, className)}
           onClick={(e) => {
+            const clickTarget = e.target as HTMLElement;
+            const clickedAnchor = clickTarget.closest('a[href]');
+            if (!clickedAnchor) {
+              const firstLink = (e.currentTarget as HTMLElement).querySelector('a[href]') as HTMLAnchorElement | null;
+              if (firstLink) {
+                firstLink.click();
+              }
+            }
+
             if (onItemClick) {
               onItemClick(props.value, e);
             }
