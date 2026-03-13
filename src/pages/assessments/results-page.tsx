@@ -1,117 +1,228 @@
-import { FileText, AlertTriangle, TrendingUp, Shield, ArrowLeft } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, FileDown, ShieldAlert, TrendingUp, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-const criticalDimensions = [
-  { name: 'Exigências Emocionais', score: '3.2', tone: 'bg-red-100 text-red-700', label: 'Crítico' },
-  { name: 'Ritmo de Trabalho', score: '4.1', tone: 'bg-orange-100 text-orange-700', label: 'Alto' },
-  { name: 'Conflito Trabalho-Família', score: '4.8', tone: 'bg-yellow-100 text-yellow-700', label: 'Médio' },
+interface CriticalDimension {
+  name: string
+  score: number
+  severity: 'critical' | 'high' | 'medium'
+  recommendation: string
+}
+
+interface ActionPlanMilestone {
+  id: string
+  title: string
+  owner: string
+  due_date: string
+  status: 'planned' | 'in_progress' | 'done'
+}
+
+const criticalDimensions: CriticalDimension[] = [
+  {
+    name: 'Exigencias emocionais',
+    score: 4.7,
+    severity: 'critical',
+    recommendation: 'Criar protocolo de acolhimento psicologico para incidentes criticos.',
+  },
+  {
+    name: 'Ritmo de trabalho',
+    score: 4.3,
+    severity: 'high',
+    recommendation: 'Rebalancear carga semanal entre secretaria, coordenacao e sala de aula.',
+  },
+  {
+    name: 'Conflito trabalho-familia',
+    score: 3.8,
+    severity: 'medium',
+    recommendation: 'Pilotar escala flexivel em setores com maior indice de estresse.',
+  },
 ]
 
-const recommendations = [
-  'Implementar programa de suporte emocional com acompanhamento psicológico periódico.',
-  'Revisar distribuição de carga de trabalho nos setores com maior incidência de esgotamento.',
-  'Promover ações de flexibilização de horários para mitigar conflito trabalho-família.',
+const actionPlanMilestones: ActionPlanMilestone[] = [
+  {
+    id: 'm-1',
+    title: 'Workshop de saude mental para liderancas',
+    owner: 'RH + Psicologia Escolar',
+    due_date: '2026-04-08',
+    status: 'planned',
+  },
+  {
+    id: 'm-2',
+    title: 'Revisao do quadro de pausas por setor',
+    owner: 'Seguranca do Trabalho',
+    due_date: '2026-04-16',
+    status: 'in_progress',
+  },
+  {
+    id: 'm-3',
+    title: 'Canal sigiloso de acolhimento ativo',
+    owner: 'Compliance',
+    due_date: '2026-03-28',
+    status: 'done',
+  },
 ]
+
+function severityMeta(severity: CriticalDimension['severity']) {
+  if (severity === 'critical') return { label: 'Critico', variant: 'destructive' as const }
+  if (severity === 'high') return { label: 'Alto', variant: 'warning' as const }
+  return { label: 'Medio', variant: 'info' as const }
+}
+
+function milestoneMeta(status: ActionPlanMilestone['status']) {
+  if (status === 'done') return { label: 'Concluido', variant: 'success' as const }
+  if (status === 'in_progress') return { label: 'Em andamento', variant: 'warning' as const }
+  return { label: 'Planejado', variant: 'secondary' as const }
+}
 
 export function AssessmentResultsPage() {
+  const maxScore = 5
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Resultado COPSOQ</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Resumo consolidado da avaliação psicossocial com base nas respostas coletadas.
-          </p>
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-r from-background via-background to-muted/45 p-6 shadow-xs shadow-black/5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <Badge variant="warning" appearance="light" className="gap-1.5">
+              <ShieldAlert className="size-3.5" />
+              Resultado consolidado COPSOQ
+            </Badge>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Campanha Mar/2026</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Diagnostico psicossocial consolidado da unidade com foco em priorizacao de riscos.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">tenant_id ativo</Badge>
+              <Badge variant="info" appearance="light">156 respostas validas</Badge>
+              <Badge variant="success" appearance="light">82% participacao</Badge>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to="/assessments">
+                <ArrowLeft className="size-3.5" />
+                Voltar para campanhas
+              </Link>
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => toast.success('Relatorio COPSOQ exportado em PDF')}
+            >
+              <FileDown className="size-3.5" />
+              Exportar PDF
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
-            <Link to="/assessments">
-              <ArrowLeft className="size-3.5" />
-              Voltar para campanhas
-            </Link>
-          </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => toast.success('Relatório exportado com sucesso!')}
-          >
-            Exportar PDF
-          </Button>
-        </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card>
-          <CardContent className="p-5 text-center">
-            <TrendingUp className="mx-auto size-5 text-primary" />
-            <p className="mt-2 text-2xl font-bold text-primary">7.2</p>
-            <p className="text-xs text-muted-foreground">Score Geral</p>
+          <CardContent className="p-5">
+            <p className="text-xs text-muted-foreground">Score geral de risco</p>
+            <p className="mt-2 text-3xl font-semibold">7.2</p>
+            <div className="mt-3 inline-flex items-center gap-1 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
+              <TrendingUp className="size-3.5" />
+              +0.8 vs campanha anterior
+            </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-5 text-center">
-            <Shield className="mx-auto size-5 text-emerald-600" />
-            <p className="mt-2 text-2xl font-bold text-emerald-600">82%</p>
-            <p className="text-xs text-muted-foreground">Participação</p>
+          <CardContent className="p-5">
+            <p className="text-xs text-muted-foreground">Participacao</p>
+            <p className="mt-2 text-3xl font-semibold">82%</p>
+            <p className="mt-3 text-xs text-muted-foreground">Meta minima para auditoria interna: 75%</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-5 text-center">
-            <AlertTriangle className="mx-auto size-5 text-yellow-600" />
-            <p className="mt-2 text-2xl font-bold text-yellow-600">3</p>
-            <p className="text-xs text-muted-foreground">Dimensões Críticas</p>
+          <CardContent className="p-5">
+            <p className="text-xs text-muted-foreground">Dimensoes criticas</p>
+            <p className="mt-2 text-3xl font-semibold">3</p>
+            <p className="mt-3 text-xs text-muted-foreground">2 ja com plano definido e 1 em negociacao</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-5 text-center">
-            <FileText className="mx-auto size-5 text-muted-foreground" />
-            <p className="mt-2 text-2xl font-bold">156</p>
-            <p className="text-xs text-muted-foreground">Respostas</p>
+          <CardContent className="p-5">
+            <p className="text-xs text-muted-foreground">Setores respondentes</p>
+            <p className="mt-2 text-3xl font-semibold">11</p>
+            <div className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Users className="size-3.5" />
+              Cobertura da unidade completa
+            </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Dimensões mais críticas</CardTitle>
+            <CardTitle>Dimensoes prioritarias</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {criticalDimensions.map((dimension) => (
-              <div
-                key={dimension.name}
-                className="flex items-center justify-between rounded-lg border px-4 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium">{dimension.name}</p>
-                  <p className="text-xs text-muted-foreground">Necessita plano de mitigação prioritário</p>
+          <CardContent className="space-y-4">
+            {criticalDimensions.map((dimension) => {
+              const scorePercent = Math.min((dimension.score / maxScore) * 100, 100)
+              const severity = severityMeta(dimension.severity)
+
+              return (
+                <div key={dimension.name} className="space-y-2 rounded-xl border border-border/80 bg-card/95 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-sm font-medium">{dimension.name}</p>
+                    <Badge variant={severity.variant} appearance="light">
+                      {dimension.score.toFixed(1)} / {maxScore} - {severity.label}
+                    </Badge>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${scorePercent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{dimension.recommendation}</p>
                 </div>
-                <Badge className={dimension.tone}>
-                  {dimension.score} - {dimension.label}
-                </Badge>
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Recomendações</CardTitle>
+            <CardTitle>Roadmap de mitigacao</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {recommendations.map((recommendation) => (
-              <div key={recommendation} className="flex gap-2 text-sm text-muted-foreground">
-                <span className="mt-1 size-1.5 shrink-0 rounded-full bg-primary" />
-                <span>{recommendation}</span>
-              </div>
-            ))}
+            {actionPlanMilestones.map((milestone) => {
+              const status = milestoneMeta(milestone.status)
+
+              return (
+                <div key={milestone.id} className="rounded-xl border border-border/80 bg-card/95 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-medium">{milestone.title}</p>
+                    <Badge variant={status.variant} appearance="light">
+                      {status.label}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">Responsavel: {milestone.owner}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Prazo: {milestone.due_date}</p>
+                </div>
+              )
+            })}
+
+            <Button
+              variant="outline"
+              className="w-full gap-1.5"
+              onClick={() => toast.success('Plano de acao sincronizado com Gestao de Riscos')}
+            >
+              <CheckCircle2 className="size-4" />
+              Sincronizar com planos de acao
+            </Button>
           </CardContent>
         </Card>
-      </div>
+      </section>
     </div>
   )
 }
+
