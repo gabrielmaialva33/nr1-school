@@ -52,6 +52,7 @@ import {
   ACCEPTED_UPLOAD_FILE_TYPES,
   MAX_UPLOAD_FILE_SIZE,
   buildComplianceAuditTrail,
+  type ComplianceAuditEvent,
   createEmptyUploadDraft,
   documentStatusMeta,
   documentTypeMeta,
@@ -91,6 +92,14 @@ function medicalNexusBadgeVariant(risk: MedicalCertificate['nexus_risk']) {
   if (risk === 'medium') return 'warning' as const
   if (risk === 'low') return 'success' as const
   return 'secondary' as const
+}
+
+function getAuditCategoryMeta(event: ComplianceAuditEvent) {
+  if (event.category === 'training') return { label: 'Treinamento', icon: GraduationCap }
+  if (event.category === 'document') return { label: 'Documento', icon: FileText }
+  if (event.category === 'ppe') return { label: 'EPI', icon: Shield }
+  if (event.category === 'medical') return { label: 'Atestado', icon: Brain }
+  return { label: 'Sistema', icon: AlertCircle }
 }
 
 export function EmployeeProfilePage() {
@@ -188,8 +197,8 @@ export function EmployeeProfilePage() {
   }, [compliance?.compliance_documents])
 
   const complianceAuditTrail = useMemo(
-    () => (compliance ? buildComplianceAuditTrail(compliance) : []),
-    [compliance],
+    () => (compliance ? buildComplianceAuditTrail(compliance, medicalCertificates) : []),
+    [compliance, medicalCertificates],
   )
 
   const availableTrainingOptions = useMemo(() => {
@@ -647,7 +656,7 @@ export function EmployeeProfilePage() {
                         Registro em {formatDateTimePtBr(certificate.created_at)} • Médico {certificate.doctor_name}
                       </p>
                     </div>
-                    <div className="grid gap-3 text-sm md:min-w-80 md:grid-cols-3">
+                    <div className="grid gap-3 text-sm md:min-w-[28rem] md:grid-cols-4">
                       <div>
                         <p className="text-xs text-muted-foreground">Emissao</p>
                         <p>{formatDatePtBr(certificate.issue_date)}</p>
@@ -662,6 +671,16 @@ export function EmployeeProfilePage() {
                           <CalendarDays className="size-3.5 text-muted-foreground" />
                           {certificate.days_off} dias
                         </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Encaminhamento</p>
+                        <Badge
+                          variant={certificate.inss_referral ? 'warning' : 'secondary'}
+                          appearance="light"
+                          className="mt-1"
+                        >
+                          {certificate.inss_referral ? 'INSS' : 'Sem INSS'}
+                        </Badge>
                       </div>
                     </div>
                   </div>
@@ -800,30 +819,47 @@ export function EmployeeProfilePage() {
             </div>
             <Separator className="my-4" />
             <div className="space-y-3">
-              {complianceAuditTrail.map((event) => (
-                <div key={event.id} className="employee-profile-info">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium">{event.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {event.description}
-                      </p>
+              {complianceAuditTrail.map((event) => {
+                const category = getAuditCategoryMeta(event)
+
+                return (
+                  <div key={event.id} className="employee-profile-info">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <category.icon className="size-3.5" />
+                          </div>
+                          <p className="text-sm font-medium">{event.title}</p>
+                          <Badge variant="outline" className="text-[10px]">
+                            {category.label}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{event.description}</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {event.tags.map((tag) => (
+                            <Badge key={`${event.id}-${tag}`} variant="outline" className="text-[10px]">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <Badge
+                        variant={
+                          event.tone === 'success'
+                            ? 'success'
+                            : event.tone === 'warning'
+                              ? 'warning'
+                              : 'info'
+                        }
+                        appearance="light"
+                      >
+                        {formatDatePtBr(event.occurred_at)}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        event.tone === 'success'
-                          ? 'success'
-                          : event.tone === 'warning'
-                            ? 'warning'
-                            : 'info'
-                      }
-                      appearance="light"
-                    >
-                      {formatDatePtBr(event.occurred_at)}
-                    </Badge>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <Separator className="my-4" />
             <p className="text-sm text-muted-foreground">
