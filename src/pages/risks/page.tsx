@@ -384,44 +384,70 @@ export function RisksPage() {
           <StatCard
             title="Total de Riscos"
             value={stats.total}
-          helper="Inventário consolidado da escola"
-          icon={AlertTriangle}
-          tone="primary"
-        />
-        <StatCard
-          title="Críticos"
-          value={stats.critical}
-          helper="Riscos intoleráveis e prioritários"
-          icon={ShieldX}
-          tone="destructive"
-        />
-        <StatCard
-          title="Em Tratamento"
-          value={stats.treating}
-          helper="Demandam acompanhamento ativo"
-          icon={Wrench}
-          tone="info"
-        />
-        <StatCard
-          title="Controlados"
-          value={stats.controlled}
-          helper="Riscos com medidas estabilizadas"
-          icon={ShieldCheck}
-          tone="success"
+            helper="Inventário consolidado da escola"
+            icon={AlertTriangle}
+            tone="primary"
+          />
+          <StatCard
+            title="Críticos"
+            value={stats.critical}
+            helper="Riscos intoleráveis e prioritários"
+            icon={ShieldX}
+            tone="destructive"
+          />
+          <StatCard
+            title="Em Tratamento"
+            value={stats.treating}
+            helper="Demandam acompanhamento ativo"
+            icon={Wrench}
+            tone="info"
+          />
+          <StatCard
+            title="Controlados"
+            value={stats.controlled}
+            helper="Riscos com medidas estabilizadas"
+            icon={ShieldCheck}
+            tone="success"
           />
         </div>
 
         <Card className="surface-card rounded-[28px] border border-border/80 bg-card/96 shadow-[var(--shadow-soft)] backdrop-blur-sm">
-        <CardHeader className="flex-col items-start gap-4 border-b border-border/70 pb-5">
-          <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <CardHeader className="flex-col items-stretch gap-4 border-b border-border/70 pb-5">
             <div>
               <CardTitle>Inventário de Riscos</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 Use os filtros para refinar criticidade, etapa do tratamento e volume por página.
               </p>
             </div>
-            <CardToolbar>
-              <InputGroup className="w-full xl:max-w-md">
+
+            <Tabs
+              value={filters.status}
+              onValueChange={(value) =>
+                setFilters((current) => ({
+                  ...current,
+                  status: value as RiskFilters['status'],
+                  page: 1,
+                }))
+              }
+            >
+              <TabsList
+                variant="button"
+                className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0"
+              >
+                {statusTabs.map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="rounded-full border border-border bg-background/80 px-4 data-[state=active]:border-primary data-[state=active]:bg-primary/12 data-[state=active]:text-primary"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            <CardToolbar className="w-full flex-col items-stretch gap-3 xl:flex-row xl:items-center xl:justify-between">
+              <InputGroup className="w-full xl:max-w-xl">
                 <InputWrapper variant="lg">
                   <Search className="size-4 text-muted-foreground" />
                   <Input
@@ -439,7 +465,7 @@ export function RisksPage() {
                 </InputWrapper>
               </InputGroup>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:flex xl:items-center">
                 <Select
                   value={filters.level}
                   onValueChange={(value) =>
@@ -450,7 +476,7 @@ export function RisksPage() {
                     }))
                   }
                 >
-                  <SelectTrigger size="lg" className="min-w-52">
+                  <SelectTrigger size="lg" className="w-full sm:min-w-52">
                     <SelectValue placeholder="Filtrar por nível" />
                   </SelectTrigger>
                   <SelectContent>
@@ -472,7 +498,7 @@ export function RisksPage() {
                     }))
                   }
                 >
-                  <SelectTrigger size="lg" className="min-w-40">
+                  <SelectTrigger size="lg" className="w-full sm:min-w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -483,174 +509,147 @@ export function RisksPage() {
                 </Select>
               </div>
             </CardToolbar>
-          </div>
+          </CardHeader>
 
-          <Tabs
-            value={filters.status}
-            onValueChange={(value) =>
-              setFilters((current) => ({
-                ...current,
-                status: value as RiskFilters['status'],
-                page: 1,
-              }))
-            }
-          >
-            <TabsList
-              variant="button"
-              className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0"
-            >
-              {statusTabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="rounded-full border border-border bg-background/80 px-4 data-[state=active]:border-primary data-[state=active]:bg-primary/12 data-[state=active]:text-primary"
-                >
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </CardHeader>
-
-        <CardContent>
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/15 px-4 py-3 text-xs">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
-              <Activity className="size-3.5 text-primary" />
-              {meta.total} registros no recorte atual
-            </div>
-            {hasActiveFilters ? (
+          <CardContent>
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/15 px-4 py-3 text-xs">
               <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
-                <AlertTriangle className="size-3.5 text-orange-500" />
-                filtros ativos aplicados
+                <Activity className="size-3.5 text-primary" />
+                {meta.total} registros no recorte atual
               </div>
-            ) : (
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
-                <ShieldCheck className="size-3.5 text-success" />
-                visão consolidada do inventário
-              </div>
-            )}
-          </div>
-          <div className="overflow-x-auto rounded-2xl border border-border/70 bg-background/70">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead>Categoria MTE</TableHead>
-                <TableHead className="hidden md:table-cell">Setor</TableHead>
-                <TableHead className="hidden md:table-cell text-center">Probabilidade</TableHead>
-                <TableHead className="hidden md:table-cell text-center">Severidade</TableHead>
-                <TableHead>Nível</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell colSpan={7}>
-                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : error ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className="py-10 text-center text-sm text-destructive"
-                  >
-                    {error}
-                  </TableCell>
-                </TableRow>
-              ) : risks.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="py-12 text-center">
-                    <div className="space-y-2">
-                      <p className="font-medium">Nenhum risco encontrado</p>
-                      <p className="text-sm text-muted-foreground">
-                        Ajuste os filtros para ampliar a busca no inventário.
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
+              {hasActiveFilters ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
+                  <AlertTriangle className="size-3.5 text-orange-500" />
+                  filtros ativos aplicados
+                </div>
               ) : (
-                risks.map((risk) => (
-                  <TableRow key={risk.id} className="border-t border-border/70 hover:bg-muted/25">
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-medium text-foreground">{risk.category_label}</p>
-                        <p className="line-clamp-2 text-xs text-muted-foreground">
-                          {risk.description}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {risk.environment_name}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-center font-medium">
-                      {risk.probability}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-center font-medium">
-                      {risk.severity}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          'border-0',
-                          levelMeta[risk.risk_level].className,
-                        )}
-                      >
-                        {levelMeta[risk.risk_level].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={statusMeta[risk.status].variant}
-                        appearance={statusMeta[risk.status].appearance}
-                      >
-                        {statusMeta[risk.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1.5 bg-background/90"
-                              onClick={() => setSelectedRisk(risk)}
-                            >
-                              <Eye className="size-3.5" />
-                              Ver
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Ver detalhes do risco</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1.5 bg-background/90"
-                              onClick={() =>
-                                toast.success('Abrindo editor de risco...')
-                              }
-                            >
-                              <Pencil className="size-3.5" />
-                              Editar
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Editar risco</TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
+                  <ShieldCheck className="size-3.5 text-success" />
+                  visão consolidada do inventário
+                </div>
               )}
-            </TableBody>
-          </Table>
-          </div>
-        </CardContent>
+            </div>
+            <div className="overflow-x-auto rounded-2xl border border-border/70 bg-background/70">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30 hover:bg-muted/30">
+                    <TableHead>Categoria MTE</TableHead>
+                    <TableHead className="hidden md:table-cell">Setor</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Probabilidade</TableHead>
+                    <TableHead className="hidden md:table-cell text-center">Severidade</TableHead>
+                    <TableHead>Nível</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array.from({ length: 6 }).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell colSpan={7}>
+                          <div className="h-10 animate-pulse rounded-lg bg-muted" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-10 text-center text-sm text-destructive"
+                      >
+                        {error}
+                      </TableCell>
+                    </TableRow>
+                  ) : risks.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-12 text-center">
+                        <div className="space-y-2">
+                          <p className="font-medium">Nenhum risco encontrado</p>
+                          <p className="text-sm text-muted-foreground">
+                            Ajuste os filtros para ampliar a busca no inventário.
+                          </p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    risks.map((risk) => (
+                      <TableRow key={risk.id} className="border-t border-border/70 hover:bg-muted/25">
+                        <TableCell>
+                          <div className="space-y-1">
+                            <p className="font-medium text-foreground">{risk.category_label}</p>
+                            <p className="line-clamp-2 text-xs text-muted-foreground">
+                              {risk.description}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {risk.environment_name}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-center font-medium">
+                          {risk.probability}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-center font-medium">
+                          {risk.severity}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={cn(
+                              'border-0',
+                              levelMeta[risk.risk_level].className,
+                            )}
+                          >
+                            {levelMeta[risk.risk_level].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={statusMeta[risk.status].variant}
+                            appearance={statusMeta[risk.status].appearance}
+                          >
+                            {statusMeta[risk.status].label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex justify-end gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 bg-background/90"
+                                  onClick={() => setSelectedRisk(risk)}
+                                >
+                                  <Eye className="size-3.5" />
+                                  Ver
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Ver detalhes do risco</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 bg-background/90"
+                                  onClick={() =>
+                                    toast.success('Abrindo editor de risco...')
+                                  }
+                                >
+                                  <Pencil className="size-3.5" />
+                                  Editar
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Editar risco</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
 
         <CardFooter className="flex flex-col gap-4 py-4 md:flex-row md:items-center md:justify-between">
           <div className="text-sm text-muted-foreground">
