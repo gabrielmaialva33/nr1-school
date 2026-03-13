@@ -234,7 +234,7 @@ export function ReportsPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         {reportTemplates.map((template) => (
           <Card key={template.id} className="overflow-hidden">
             <CardContent className="p-0">
@@ -300,8 +300,8 @@ export function ReportsPage() {
       <Card>
         <CardHeader className="gap-3">
           <CardTitle>Historico de relatorios</CardTitle>
-          <CardToolbar className="w-full flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <InputGroup className="w-full lg:max-w-md">
+          <CardToolbar className="w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <InputGroup className="w-full xl:max-w-2xl">
               <InputWrapper variant="lg">
                 <Search className="size-4 text-muted-foreground" />
                 <Input
@@ -312,9 +312,9 @@ export function ReportsPage() {
                 />
               </InputWrapper>
             </InputGroup>
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <div className="flex w-full flex-col gap-2 sm:flex-row xl:w-auto">
               <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as typeof typeFilter)}>
-                <SelectTrigger size="lg" className="min-w-40">
+                <SelectTrigger size="lg" className="w-full sm:min-w-44">
                   <SelectValue placeholder="Tipo" />
                 </SelectTrigger>
                 <SelectContent>
@@ -329,7 +329,7 @@ export function ReportsPage() {
               </Select>
 
               <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as typeof statusFilter)}>
-                <SelectTrigger size="lg" className="min-w-40">
+                <SelectTrigger size="lg" className="w-full sm:min-w-44">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -339,7 +339,7 @@ export function ReportsPage() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" size="lg" className="gap-1.5">
+              <Button variant="outline" size="lg" className="w-full gap-1.5 sm:w-auto">
                 <Funnel className="size-4" />
                 Filtros
               </Button>

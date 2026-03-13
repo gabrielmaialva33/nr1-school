@@ -380,7 +380,7 @@ export function EmployeeProfilePage() {
     <div className="employee-profile-shell space-y-6">
       <section className="employee-profile-hero">
         <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex flex-col gap-5 md:flex-row md:items-start">
+          <div className="flex flex-col gap-5 md:flex-row md:items-start xl:min-w-0 xl:flex-1">
             <Avatar className="size-18 border border-white/15 bg-background/10 shadow-md shadow-black/15 ring-1 ring-white/8">
               {employee.avatar_url ? (
                 <AvatarImage src={toAbsoluteUrl(employee.avatar_url)} alt={employee.name} className="h-full w-full" />
@@ -441,15 +441,19 @@ export function EmployeeProfilePage() {
             </div>
           </div>
 
-          <div className="employee-profile-actions xl:min-w-[400px]">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Button variant="primary" className="gap-2" onClick={() => setIsUploadOpen(true)}>
+          <div className="employee-profile-actions w-full xl:w-auto xl:max-w-[30rem]">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+              <Button
+                variant="primary"
+                className="h-auto min-h-10 justify-start gap-2 text-left sm:justify-center sm:text-center"
+                onClick={() => setIsUploadOpen(true)}
+              >
                 <Upload className="size-4" />
                 Subir certificado
               </Button>
               <Button
                 variant="outline"
-                className="employee-profile-toolbar-button gap-2"
+                className="employee-profile-toolbar-button h-auto min-h-10 justify-start gap-2 text-left sm:justify-center sm:text-center"
                 onClick={() => toast.success('Dossiê exportado com sucesso')}
               >
                 <Download className="size-4" />
@@ -457,7 +461,7 @@ export function EmployeeProfilePage() {
               </Button>
               <Button
                 variant="outline"
-                className="employee-profile-toolbar-button employee-profile-toolbar-button-danger gap-2"
+                className="employee-profile-toolbar-button employee-profile-toolbar-button-danger h-auto min-h-10 justify-start gap-2 text-left sm:justify-center sm:text-center"
                 onClick={() => toast.success(`${employee.name} desligado com sucesso`)}
               >
                 <UserMinus className="size-4" />

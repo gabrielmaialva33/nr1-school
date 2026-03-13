@@ -12,12 +12,12 @@ export function AppLayout() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-transparent">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-transparent">
       <Sidebar isCollapsed={isSidebarCollapsed} />
       
       <div 
         className={cn(
-          "flex min-h-screen grow flex-col transition-all duration-300",
+          "box-border flex min-h-screen min-w-0 w-full max-w-full grow flex-col transition-[padding] duration-300",
           isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}
       >
