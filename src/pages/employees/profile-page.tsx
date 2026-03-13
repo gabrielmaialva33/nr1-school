@@ -43,6 +43,7 @@ import { fetchEmployeeById, type Employee } from '@/services/employees'
 import {
   ACCEPTED_UPLOAD_FILE_TYPES,
   MAX_UPLOAD_FILE_SIZE,
+  buildComplianceAuditTrail,
   createEmptyUploadDraft,
   documentStatusMeta,
   documentTypeMeta,
@@ -167,6 +168,11 @@ export function EmployeeProfilePage() {
       ).length,
     }
   }, [compliance?.compliance_documents])
+
+  const complianceAuditTrail = useMemo(
+    () => (compliance ? buildComplianceAuditTrail(compliance) : []),
+    [compliance],
+  )
 
   const availableTrainingOptions = useMemo(() => {
     if (!compliance) return trainingsLookup
@@ -705,6 +711,33 @@ export function EmployeeProfilePage() {
                   {compliance.meta.expiring_documents}
                 </p>
               </div>
+            </div>
+            <Separator className="my-4" />
+            <div className="space-y-3">
+              {complianceAuditTrail.map((event) => (
+                <div key={event.id} className="employee-profile-info">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium">{event.title}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {event.description}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        event.tone === 'success'
+                          ? 'success'
+                          : event.tone === 'warning'
+                            ? 'warning'
+                            : 'info'
+                      }
+                      appearance="light"
+                    >
+                      {formatDatePtBr(event.occurred_at)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
             </div>
             <Separator className="my-4" />
             <p className="text-sm text-muted-foreground">
