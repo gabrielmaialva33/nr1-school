@@ -15,6 +15,8 @@ import {
   Sparkles,
   Trash2,
   User,
+  UserPlus2,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -62,8 +64,10 @@ import {
 import {
   fetchActionPlans,
   type ActionPlan,
+  type ActionPlanInvolvedEmployee,
   type PlanStatus,
 } from '@/services/action-plans'
+import { fetchEmployees, type Employee } from '@/services/employees'
 
 type BoardColumnId = 'pending' | 'in_progress' | 'completed'
 
@@ -137,6 +141,29 @@ const validPlanStatuses = new Set<PlanStatus | 'all'>([
   'overdue',
 ])
 
+interface EmployeeOption {
+  id: string
+  name: string
+  role: string
+  avatar_url: string | null
+}
+
+interface CreatePlanDraft {
+  title: string
+  action_type: ActionPlan['action_type']
+  responsible_name: string
+  deadline: string
+  description: string
+}
+
+const initialCreatePlanDraft: CreatePlanDraft = {
+  title: '',
+  action_type: 'preventive',
+  responsible_name: '',
+  deadline: '',
+  description: '',
+}
+
 function isOverdue(deadline: string) {
   return new Date(deadline) < new Date()
 }
@@ -179,6 +206,15 @@ function buildBoardColumns(plans: ActionPlan[]): Record<BoardColumnId, ActionPla
     pending: plans.filter(plan => getBoardColumnId(plan.status) === 'pending'),
     in_progress: plans.filter(plan => getBoardColumnId(plan.status) === 'in_progress'),
     completed: plans.filter(plan => getBoardColumnId(plan.status) === 'completed'),
+  }
+}
+
+function toEmployeeOption(employee: Employee): EmployeeOption {
+  return {
+    id: employee.id,
+    name: employee.name,
+    role: employee.role,
+    avatar_url: employee.avatar_url,
   }
 }
 
@@ -273,6 +309,23 @@ function KanbanCard({
             <p className="truncate text-xs font-medium text-foreground">{plan.responsible_name}</p>
           </div>
         </div>
+        {plan.involved_employees.length > 0 ? (
+          <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+              Envolvidos
+            </p>
+            <div className="mt-1 flex items-center gap-1.5">
+              <UserPlus2 className="size-3.5 text-muted-foreground" />
+              <p className="truncate text-xs font-medium text-foreground">
+                {plan.involved_employees
+                  .slice(0, 2)
+                  .map((employee) => employee.employee_name)
+                  .join(', ')}
+                {plan.involved_employees.length > 2 ? ` +${plan.involved_employees.length - 2}` : ''}
+              </p>
+            </div>
+          </div>
+        ) : null}
         <div
           className={cn(
             'inline-flex items-center gap-1.5 rounded-2xl border border-border/60 px-3 py-2 text-[11px] font-medium',
@@ -423,15 +476,32 @@ export function ActionPlansPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [employeeOptions, setEmployeeOptions] = useState<EmployeeOption[]>([])
+  const [createPlanDraft, setCreatePlanDraft] = useState<CreatePlanDraft>(initialCreatePlanDraft)
+  const [involvedEmployeeId, setInvolvedEmployeeId] = useState('')
+  const [createInvolvedEmployees, setCreateInvolvedEmployees] = useState<ActionPlanInvolvedEmployee[]>([])
 
   useEffect(() => {
     setIsLoading(true)
     setError(null)
 
-    fetchActionPlans('all')
-      .then(res => {
-        setPlans(res.data)
-        setPlanOrder(createPlanOrder(res.data))
+    Promise.all([
+      fetchActionPlans('all'),
+      fetchEmployees({
+        page: 1,
+        per_page: 200,
+        search: '',
+        status: 'all',
+      }),
+    ])
+      .then(([plansPayload, employeesPayload]) => {
+        const normalizedPlans = plansPayload.data.map((plan) => ({
+          ...plan,
+          involved_employees: plan.involved_employees ?? [],
+        }))
+        setPlans(normalizedPlans)
+        setPlanOrder(createPlanOrder(normalizedPlans))
+        setEmployeeOptions(employeesPayload.data.map(toEmployeeOption))
       })
       .catch(err => setError(err instanceof Error ? err.message : 'Erro ao carregar dados'))
       .finally(() => setIsLoading(false))
@@ -460,7 +530,10 @@ export function ActionPlansPage() {
 
       return (
         plan.title.toLowerCase().includes(normalizedSearch) ||
-        plan.responsible_name.toLowerCase().includes(normalizedSearch)
+        plan.responsible_name.toLowerCase().includes(normalizedSearch) ||
+        plan.involved_employees.some((employee) =>
+          employee.employee_name.toLowerCase().includes(normalizedSearch),
+        )
       )
     })
   }, [planOrder, plans, search, statusFilter])
@@ -543,10 +616,88 @@ export function ActionPlansPage() {
     })
   }
 
+  function resetCreatePlanDialogState() {
+    setCreatePlanDraft(initialCreatePlanDraft)
+    setCreateInvolvedEmployees([])
+    setInvolvedEmployeeId('')
+  }
+
+  function handleCreateDialogOpenChange(open: boolean) {
+    setIsCreateOpen(open)
+    if (!open) {
+      resetCreatePlanDialogState()
+    }
+  }
+
+  function handleAddInvolvedEmployee() {
+    if (!involvedEmployeeId) return
+
+    const employee = employeeOptions.find((option) => option.id === involvedEmployeeId)
+    if (!employee) return
+
+    setCreateInvolvedEmployees((current) => {
+      if (current.some((entry) => entry.employee_id === employee.id)) {
+        return current
+      }
+
+      return [
+        ...current,
+        {
+          employee_id: employee.id,
+          employee_name: employee.name,
+          employee_role: employee.role,
+          employee_avatar_url: employee.avatar_url,
+        },
+      ]
+    })
+    setInvolvedEmployeeId('')
+  }
+
+  function handleRemoveInvolvedEmployee(employeeId: string) {
+    setCreateInvolvedEmployees((current) => current.filter((entry) => entry.employee_id !== employeeId))
+  }
+
   function handleCreateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (createInvolvedEmployees.length === 0) {
+      toast.error('Adicione ao menos um funcionário envolvido')
+      return
+    }
+
+    const responsibleName = createPlanDraft.responsible_name.trim()
+    const nextResponsibleName =
+      responsibleName.length > 0 ? responsibleName : createInvolvedEmployees[0]?.employee_name ?? ''
+
+    if (!nextResponsibleName) {
+      toast.error('Preencha o responsável do plano')
+      return
+    }
+
+    const newPlan: ActionPlan = {
+      id: crypto.randomUUID(),
+      risk_id: `RISK-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      school_id: plans[0]?.school_id ?? '',
+      title: createPlanDraft.title.trim(),
+      description: createPlanDraft.description.trim(),
+      action_type: createPlanDraft.action_type,
+      responsible_name: nextResponsibleName,
+      involved_employees: createInvolvedEmployees,
+      deadline: createPlanDraft.deadline,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }
+
+    setPlans((current) => [newPlan, ...current])
+    setPlanOrder((current) => {
+      const shifted = Object.fromEntries(
+        Object.entries(current).map(([planId, order]) => [planId, order + 1]),
+      )
+
+      return { [newPlan.id]: 0, ...shifted }
+    })
     toast.success('Plano de ação criado com sucesso')
-    setIsCreateOpen(false)
+    handleCreateDialogOpenChange(false)
   }
 
   if (isLoading) {
@@ -685,7 +836,7 @@ export function ActionPlansPage() {
                   variant="lg"
                   value={search}
                   onChange={event => setSearch(event.target.value)}
-                  placeholder="Buscar por título ou responsável"
+                  placeholder="Buscar por título, responsável ou envolvido"
                 />
               </InputWrapper>
             </InputGroup>
@@ -824,6 +975,27 @@ export function ActionPlansPage() {
 
               <Separator />
 
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Funcionários envolvidos</p>
+                {selectedPlan.involved_employees.length > 0 ? (
+                  <div className="grid gap-2">
+                    {selectedPlan.involved_employees.map((employee) => (
+                      <div
+                        key={employee.employee_id}
+                        className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/35 px-3 py-2"
+                      >
+                        <p className="text-sm font-medium text-foreground">{employee.employee_name}</p>
+                        <p className="text-xs text-muted-foreground">{employee.employee_role}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Sem funcionários vinculados.</p>
+                )}
+              </div>
+
+              <Separator />
+
               <div className="flex flex-col gap-2 pt-2">
                 <Button
                   variant="primary"
@@ -869,7 +1041,7 @@ export function ActionPlansPage() {
         </SheetContent>
       </Sheet>
 
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      <Dialog open={isCreateOpen} onOpenChange={handleCreateDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Novo Plano de Ação</DialogTitle>
@@ -881,11 +1053,27 @@ export function ActionPlansPage() {
             <DialogBody className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="plan-title">Título</Label>
-                <Input id="plan-title" placeholder="Título do plano de ação" required />
+                <Input
+                  id="plan-title"
+                  value={createPlanDraft.title}
+                  onChange={(event) =>
+                    setCreatePlanDraft((current) => ({ ...current, title: event.target.value }))
+                  }
+                  placeholder="Título do plano de ação"
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan-type">Tipo de ação</Label>
-                <Select required>
+                <Select
+                  value={createPlanDraft.action_type}
+                  onValueChange={(value) =>
+                    setCreatePlanDraft((current) => ({
+                      ...current,
+                      action_type: value as ActionPlan['action_type'],
+                    }))
+                  }
+                >
                   <SelectTrigger id="plan-type">
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
@@ -898,23 +1086,102 @@ export function ActionPlansPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan-responsible">Responsável</Label>
-                <Input id="plan-responsible" placeholder="Nome do responsável" required />
+                <Input
+                  id="plan-responsible"
+                  value={createPlanDraft.responsible_name}
+                  onChange={(event) =>
+                    setCreatePlanDraft((current) => ({
+                      ...current,
+                      responsible_name: event.target.value,
+                    }))
+                  }
+                  placeholder="Nome do responsável"
+                  required
+                />
+              </div>
+              <div className="space-y-3">
+                <Label>Funcionários envolvidos</Label>
+                <div className="flex gap-2">
+                  <Select value={involvedEmployeeId} onValueChange={setInvolvedEmployeeId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um funcionário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employeeOptions.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          {employee.name} • {employee.role}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="shrink-0 gap-2"
+                    disabled={!involvedEmployeeId}
+                    onClick={handleAddInvolvedEmployee}
+                  >
+                    <UserPlus2 className="size-4" />
+                    Adicionar
+                  </Button>
+                </div>
+                {createInvolvedEmployees.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {createInvolvedEmployees.map((employee) => (
+                      <Badge
+                        key={employee.employee_id}
+                        variant="outline"
+                        className="flex items-center gap-1.5 rounded-full bg-muted/40 pl-3 pr-2 py-1.5"
+                      >
+                        <span className="text-xs font-medium">{employee.employee_name}</span>
+                        <button
+                          type="button"
+                          className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                          onClick={() => handleRemoveInvolvedEmployee(employee.employee_id)}
+                          aria-label={`Remover ${employee.employee_name}`}
+                        >
+                          <X className="size-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Nenhum funcionário envolvido selecionado.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan-deadline">Prazo</Label>
-                <Input id="plan-deadline" type="date" required />
+                <Input
+                  id="plan-deadline"
+                  type="date"
+                  value={createPlanDraft.deadline}
+                  onChange={(event) =>
+                    setCreatePlanDraft((current) => ({ ...current, deadline: event.target.value }))
+                  }
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan-description">Descrição</Label>
                 <Textarea
                   id="plan-description"
+                  value={createPlanDraft.description}
+                  onChange={(event) =>
+                    setCreatePlanDraft((current) => ({ ...current, description: event.target.value }))
+                  }
                   placeholder="Descreva o plano de ação"
                   rows={4}
                 />
               </div>
             </DialogBody>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleCreateDialogOpenChange(false)}
+              >
                 Cancelar
               </Button>
               <Button type="submit" variant="primary">

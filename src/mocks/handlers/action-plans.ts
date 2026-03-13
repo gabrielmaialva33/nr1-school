@@ -18,7 +18,10 @@ export const actionPlansHandlers = [
     if (status) filtered = filtered.filter(p => p.status === status)
     if (search) filtered = filtered.filter(p =>
       p.title.toLowerCase().includes(search) ||
-      p.responsible_name.toLowerCase().includes(search),
+      p.responsible_name.toLowerCase().includes(search) ||
+      p.involved_employees?.some((employee) =>
+        employee.employee_name.toLowerCase().includes(search),
+      ),
     )
 
     const { data, meta } = paginate(filtered, request, { perPage: 10 })
