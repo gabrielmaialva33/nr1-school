@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { TableRowsSkeleton } from '@/components/loading/page-skeletons'
 import { formatDatePtBr } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import type { PaginationMeta, Training, TrainingStatus } from '@/services/trainings'
@@ -247,13 +248,7 @@ export function TrainingsTableCard({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 6 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell colSpan={7}>
-                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
-                    </TableCell>
-                  </TableRow>
-                ))
+                <TableRowsSkeleton colSpan={7} />
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={7} className="py-10 text-center text-sm text-destructive">

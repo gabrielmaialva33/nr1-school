@@ -38,6 +38,7 @@ import { CountingNumber } from '@/components/ui/counting-number'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { DashboardPageSkeleton } from '@/components/loading/page-skeletons'
 import { fetchDashboardData, type DashboardData } from '@/services/dashboard'
 
 function StatCard({
@@ -447,11 +448,7 @@ export function DashboardPage() {
   }
 
   if (!data) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <DashboardPageSkeleton />
   }
 
   const { kpis, charts, alerts } = data

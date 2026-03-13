@@ -35,6 +35,7 @@ import { toAbsoluteUrl } from '@/lib/asset-path'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
+import { EmployeeProfilePageSkeleton } from '@/components/loading/page-skeletons'
 import {
   createEmployeeComplianceDocument,
   fetchEmployeeComplianceOverview,
@@ -345,11 +346,7 @@ export function EmployeeProfilePage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <EmployeeProfilePageSkeleton />
   }
 
   if (error || !employee || !compliance) {

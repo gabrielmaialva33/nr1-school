@@ -33,6 +33,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { TableRowsSkeleton } from '@/components/loading/page-skeletons'
 import { formatDatePtBr } from '@/lib/formatters'
 import { createPaginationMeta } from '@/lib/pagination'
 import {
@@ -467,13 +468,7 @@ export function MedicalCertificatesPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  Array.from({ length: 6 }).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell colSpan={8}>
-                        <div className="h-10 animate-pulse rounded-lg bg-muted" />
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  <TableRowsSkeleton colSpan={8} />
                 ) : error ? (
                   <TableRow>
                     <TableCell colSpan={8} className="py-10 text-center text-sm text-destructive">

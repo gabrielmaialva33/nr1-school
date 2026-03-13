@@ -41,6 +41,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CountingNumber } from '@/components/ui/counting-number'
+import { TableRowsSkeleton } from '@/components/loading/page-skeletons'
 import {
   employeeStatusMeta,
 } from './profile-utils'
@@ -301,13 +302,7 @@ export function EmployeesPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  Array.from({ length: 8 }).map((_, index) => (
-                    <TableRow key={index}>
-                      <TableCell colSpan={7}>
-                        <div className="h-10 animate-pulse rounded-lg bg-muted" />
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  <TableRowsSkeleton rows={8} colSpan={7} />
                 ) : error ? (
                   <TableRow>
                     <TableCell colSpan={7} className="py-10 text-center text-sm text-destructive">

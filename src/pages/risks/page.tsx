@@ -60,6 +60,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { TableRowsSkeleton } from '@/components/loading/page-skeletons'
 import { createPaginationMeta } from '@/lib/pagination'
 import {
   fetchRisks,
@@ -544,13 +545,7 @@ export function RisksPage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    Array.from({ length: 6 }).map((_, index) => (
-                      <TableRow key={index}>
-                        <TableCell colSpan={7}>
-                          <div className="h-10 animate-pulse rounded-lg bg-muted" />
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    <TableRowsSkeleton colSpan={7} />
                   ) : error ? (
                     <TableRow>
                       <TableCell

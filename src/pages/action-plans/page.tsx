@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { ActionPlansPageSkeleton } from '@/components/loading/page-skeletons'
 import {
   Kanban,
   KanbanBoard,
@@ -701,11 +702,7 @@ export function ActionPlansPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <ActionPlansPageSkeleton />
   }
 
   if (error) {

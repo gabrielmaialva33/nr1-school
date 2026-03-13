@@ -49,6 +49,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { TableRowsSkeleton } from '@/components/loading/page-skeletons'
 import { formatDatePtBr } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import type { Environment } from '@/services/environments'
@@ -226,13 +227,7 @@ export function EnvironmentsTableCard({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                Array.from({ length: 6 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell colSpan={6}>
-                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
-                    </TableCell>
-                  </TableRow>
-                ))
+                <TableRowsSkeleton colSpan={6} />
               ) : error ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-10 text-center text-sm text-destructive">

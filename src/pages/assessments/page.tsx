@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
+import { AssessmentsPageSkeleton } from '@/components/loading/page-skeletons'
 import { fetchAssessments, type Assessment } from '@/services/assessments'
 
 const riskMeta: Record<string, { label: string; className: string }> = {
@@ -302,11 +303,7 @@ export function AssessmentsPage() {
   }, [])
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    )
+    return <AssessmentsPageSkeleton />
   }
 
   if (error) {
