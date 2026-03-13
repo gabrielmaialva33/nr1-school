@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Activity,
+  Archive,
   BarChart3,
   Download,
   FileCheck2,
@@ -47,7 +48,7 @@ interface ReportTemplate {
 interface GeneratedReport {
   id: string
   name: string
-  type: 'PGR' | 'COPSOQ' | 'Indicadores' | 'Denuncias' | 'Treinamentos'
+  type: 'PGR' | 'COPSOQ' | 'Indicadores' | 'Denuncias' | 'Treinamentos' | 'Fiscalizacao'
   created_at: string
   created_by: string
   status: 'completed' | 'generating'
@@ -77,6 +78,14 @@ const reportTemplates: ReportTemplate[] = [
     icon: BarChart3,
     theme: 'from-info/20 via-info/5 to-transparent',
     output: 'PDF',
+  },
+  {
+    id: 'inspection_package',
+    title: 'Pacote de fiscalizacao NR-1',
+    description: 'Consolida inventario, planos, evidencias, atestados e trilha de auditoria.',
+    icon: Archive,
+    theme: 'from-emerald-200/45 via-emerald-100/20 to-transparent',
+    output: 'ZIP',
   },
 ]
 
@@ -121,14 +130,30 @@ const reportsData: GeneratedReport[] = [
     created_by: 'Carlos Silva',
     status: 'completed',
   },
+  {
+    id: '6',
+    name: 'Pacote_Fiscalizacao_NR1_Escola_Maria_Helena_2026-03-13.zip',
+    type: 'Fiscalizacao',
+    created_at: '2026-03-13T11:40:00Z',
+    created_by: 'Ana Carolina Mendes',
+    status: 'completed',
+  },
 ]
 
 function reportTypeBadgeVariant(type: GeneratedReport['type']) {
   if (type === 'PGR') return 'primary'
   if (type === 'COPSOQ') return 'warning'
   if (type === 'Indicadores') return 'info'
+  if (type === 'Fiscalizacao') return 'success'
   return 'secondary'
 }
+
+const inspectionPackageChecklist = [
+  'Inventário de riscos psicossociais por setor/cargo',
+  'Planos de ação com status, evidências e eficácia',
+  'Atestados e indicadores de nexo ocupacional',
+  'Treinamentos, EPI e trilha de auditoria por colaborador',
+]
 
 export function ReportsPage() {
   const [query, setQuery] = useState('')
@@ -164,6 +189,14 @@ export function ReportsPage() {
       toast.dismiss(loadingId)
       toast.success(`${template.title} pronto para download (${template.output})`)
     }, 1200)
+  }
+
+  function handleGenerateInspectionPackage() {
+    const loadingId = toast.loading('Consolidando pacote de fiscalização NR-1...')
+    setTimeout(() => {
+      toast.dismiss(loadingId)
+      toast.success('Pacote Fiscalizacao_NR1_2026-03-13.zip pronto para download')
+    }, 1400)
   }
 
   return (
@@ -227,6 +260,43 @@ export function ReportsPage() {
         ))}
       </section>
 
+      <section className="rounded-2xl border border-border/70 bg-card/95 p-5 shadow-xs shadow-black/5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-3">
+            <Badge variant="success" appearance="light" className="gap-1.5">
+              <Archive className="size-3.5" />
+              Pacote de fiscalização pronto para auditoria
+            </Badge>
+            <div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                Exportação única para inspeção NR-1
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Gera um ZIP com documentos essenciais para fiscalização e apresentação executiva.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {inspectionPackageChecklist.map((item) => (
+                <div key={item} className="inline-flex items-start gap-2 rounded-lg border border-border/80 bg-background/70 px-3 py-2 text-sm">
+                  <FileCheck2 className="mt-0.5 size-4 shrink-0 text-success" />
+                  <span>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="lg:min-w-64">
+            <Button variant="primary" size="lg" className="w-full gap-2" onClick={handleGenerateInspectionPackage}>
+              <Download className="size-4" />
+              Gerar pacote ZIP
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Sugestão: anexar esse pacote no fechamento mensal do comitê de SST.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <Card>
         <CardHeader className="gap-3">
           <CardTitle>Historico de relatorios</CardTitle>
@@ -254,6 +324,7 @@ export function ReportsPage() {
                   <SelectItem value="Indicadores">Indicadores</SelectItem>
                   <SelectItem value="Denuncias">Denuncias</SelectItem>
                   <SelectItem value="Treinamentos">Treinamentos</SelectItem>
+                  <SelectItem value="Fiscalizacao">Fiscalizacao</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -296,7 +367,15 @@ export function ReportsPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredReports.map((report) => (
+                  filteredReports.map((report) => {
+                    const primaryDownloadLabel =
+                      report.type === 'COPSOQ'
+                        ? 'Baixar XLSX'
+                        : report.type === 'Fiscalizacao'
+                          ? 'Baixar ZIP'
+                          : 'Baixar PDF'
+
+                    return (
                     <TableRow key={report.id}>
                       <TableCell className="font-medium">{report.name}</TableCell>
                       <TableCell>
@@ -340,14 +419,26 @@ export function ReportsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => toast.success('Download PDF iniciado')}>
-                                <FileText className="size-4" />
-                                Baixar PDF
+                              <DropdownMenuItem onClick={() => toast.success(`${primaryDownloadLabel} iniciado`)}>
+                                {report.type === 'COPSOQ' ? (
+                                  <FileSpreadsheet className="size-4" />
+                                ) : report.type === 'Fiscalizacao' ? (
+                                  <Archive className="size-4" />
+                                ) : (
+                                  <FileText className="size-4" />
+                                )}
+                                {primaryDownloadLabel}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => toast.success('Download XLSX iniciado')}>
                                 <FileSpreadsheet className="size-4" />
                                 Baixar XLSX
                               </DropdownMenuItem>
+                              {report.type === 'Fiscalizacao' ? (
+                                <DropdownMenuItem onClick={() => toast.success('Checklist de fiscalização aberto')}>
+                                  <FileCheck2 className="size-4" />
+                                  Abrir checklist
+                                </DropdownMenuItem>
+                              ) : null}
                               <DropdownMenuItem onClick={() => toast.success('Link de compartilhamento copiado')}>
                                 <Share2 className="size-4" />
                                 Compartilhar
@@ -357,7 +448,7 @@ export function ReportsPage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                  )})
                 )}
               </TableBody>
             </Table>
@@ -367,4 +458,3 @@ export function ReportsPage() {
     </div>
   )
 }
-
