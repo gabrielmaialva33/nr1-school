@@ -70,7 +70,7 @@ function StatCard({
   const content = (
     <div
       className={cn(
-        'surface-card rounded-xl border border-border/80 bg-card/95 p-5 backdrop-blur-sm',
+        'surface-card flex h-full flex-col justify-between rounded-xl border border-border/80 bg-card/95 p-5 backdrop-blur-sm',
         link && 'surface-interactive cursor-pointer',
       )}
     >
@@ -85,13 +85,17 @@ function StatCard({
           <Icon className={cn('size-5', c.icon)} />
         </div>
       </div>
-      {trendLabel && (
-        <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-          {trend === 'up' && <TrendingUp className="size-3 text-destructive" />}
-          {trend === 'down' && <TrendingDown className="size-3 text-success" />}
-          <span>{trendLabel}</span>
-        </div>
-      )}
+      <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+        {trendLabel ? (
+          <>
+            {trend === 'up' && <TrendingUp className="size-3 text-destructive" />}
+            {trend === 'down' && <TrendingDown className="size-3 text-success" />}
+            <span>{trendLabel}</span>
+          </>
+        ) : (
+          <span>&nbsp;</span>
+        )}
+      </div>
     </div>
   )
 
