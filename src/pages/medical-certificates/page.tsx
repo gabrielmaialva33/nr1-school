@@ -304,7 +304,7 @@ export function MedicalCertificatesPage() {
               <Badge variant="warning" appearance="light">Triagem de saude mental ativa</Badge>
               <Badge variant="secondary" appearance="light" className="gap-1.5">
                 <Sparkles className="size-3.5" />
-                Pronto para acoplar API real
+                Gestão integrada NR-1
               </Badge>
             </div>
           </div>

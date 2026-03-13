@@ -247,7 +247,7 @@ export function OnboardingPage() {
           <div className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-muted/25 px-3 py-2 text-xs text-muted-foreground">
             <Target className="size-3.5" />
             <BookCheck className="size-3.5" />
-            Apresentação pronta para demo
+            Integração do colaborador
           </div>
         </div>
       </section>

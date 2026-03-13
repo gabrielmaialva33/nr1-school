@@ -416,7 +416,7 @@ export function EmployeeProfilePage() {
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                   Dossiê individual com trilha de compliance, treinamentos, entregas
-                  de EPI e documentos preparados para acoplar API real em `snake_case`.
+                  de EPI e documentos do colaborador.
                 </p>
               </div>
 
@@ -866,11 +866,6 @@ export function EmployeeProfilePage() {
               })}
             </div>
             <Separator className="my-4" />
-            <p className="text-sm text-muted-foreground">
-              Esta tela foi desenhada com tokens de tema e contraste orientado por
-              superfície, para sustentar leitura em claro e escuro sem depender de
-              laranja claro em fundo branco.
-            </p>
           </div>
         </aside>
       </div>
@@ -880,8 +875,8 @@ export function EmployeeProfilePage() {
           <DialogHeader>
             <DialogTitle>Subir documento do colaborador</DialogTitle>
             <DialogDescription>
-              Fluxo normalizado para certificado de treinamento ou comprovante de
-              entrega de EPI, pronto para acoplar API real com `snake_case`.
+              Envie certificados de treinamento ou comprovantes de entrega de EPI
+              para o dossiê do colaborador.
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
@@ -900,8 +895,7 @@ export function EmployeeProfilePage() {
                       <div>
                         <p className="font-medium">Arquivo do documento</p>
                         <p className="text-sm text-muted-foreground">
-                          Aceite PDF, JPG ou PNG com até 10 MB. O mock grava
-                          metadados normalizados para `compliance_documents`.
+                          Aceite PDF, JPG ou PNG com até 10 MB.
                         </p>
                       </div>
                     </div>
