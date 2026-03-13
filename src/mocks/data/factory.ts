@@ -492,6 +492,27 @@ function buildTenantFixture(profile: TenantProfile) {
         employee_avatar_url: employee.avatar_url,
       }))
       const responsibleEmployee = faker.helpers.arrayElement(involvedEmployees)
+      const evidenceRequired = faker.datatype.boolean({ probability: 0.8 })
+      const evidenceCount =
+        status === 'completed' || status === 'verified'
+          ? faker.number.int({ min: evidenceRequired ? 1 : 0, max: 4 })
+          : faker.number.int({ min: 0, max: evidenceRequired ? 1 : 2 })
+      const effectivenessStatus =
+        status === 'completed' || status === 'verified'
+          ? faker.helpers.arrayElement(['effective', 'partially_effective', 'ineffective'])
+          : 'not_evaluated'
+      const effectivenessEvaluatedAt =
+        effectivenessStatus === 'not_evaluated'
+          ? null
+          : faker.date.recent({ days: 60 }).toISOString()
+      const effectivenessNotes =
+        effectivenessStatus === 'effective'
+          ? 'Indicadores de risco reduziram apos implementacao das medidas.'
+          : effectivenessStatus === 'partially_effective'
+            ? 'Houve melhora parcial; manter monitoramento mensal por setor.'
+            : effectivenessStatus === 'ineffective'
+              ? 'A medida nao atingiu o resultado esperado e exige replanejamento.'
+              : null
 
       return {
         id: faker.string.uuid(),
@@ -509,6 +530,11 @@ function buildTenantFixture(profile: TenantProfile) {
         involved_employees: involvedEmployees,
         deadline,
         status,
+        evidence_required: evidenceRequired,
+        evidence_count: evidenceCount,
+        effectiveness_status: effectivenessStatus,
+        effectiveness_notes: effectivenessNotes,
+        effectiveness_evaluated_at: effectivenessEvaluatedAt,
         created_at: faker.date.past({ years: 0.3 }).toISOString(),
         priority_order: index + 1,
       }

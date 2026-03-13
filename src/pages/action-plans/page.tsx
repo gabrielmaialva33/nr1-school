@@ -6,10 +6,12 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  FileCheck2,
   GripVertical,
   ListChecks,
   MoreVertical,
   Pencil,
+  Paperclip,
   Plus,
   Search,
   Sparkles,
@@ -43,7 +45,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { formatDatePtBr, getNameInitials } from '@/lib/formatters'
+import { formatDatePtBr, formatDateTimePtBr, getNameInitials } from '@/lib/formatters'
 import {
   Select,
   SelectContent,
@@ -65,6 +67,7 @@ import {
 import {
   fetchActionPlans,
   type ActionPlan,
+  type PlanEffectiveness,
   type ActionPlanInvolvedEmployee,
   type PlanStatus,
 } from '@/services/action-plans'
@@ -133,6 +136,16 @@ const statusLabels: Record<PlanStatus, string> = {
   overdue: 'Vencido',
 }
 
+const effectivenessMeta: Record<
+  PlanEffectiveness,
+  { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' }
+> = {
+  not_evaluated: { label: 'Sem avaliação', variant: 'secondary' },
+  effective: { label: 'Eficaz', variant: 'success' },
+  partially_effective: { label: 'Parcial', variant: 'warning' },
+  ineffective: { label: 'Ineficaz', variant: 'destructive' },
+}
+
 const validPlanStatuses = new Set<PlanStatus | 'all'>([
   'all',
   'pending',
@@ -154,6 +167,7 @@ interface CreatePlanDraft {
   action_type: ActionPlan['action_type']
   responsible_name: string
   deadline: string
+  evidence_required: boolean
   description: string
 }
 
@@ -162,6 +176,7 @@ const initialCreatePlanDraft: CreatePlanDraft = {
   action_type: 'preventive',
   responsible_name: '',
   deadline: '',
+  evidence_required: true,
   description: '',
 }
 
@@ -231,6 +246,7 @@ function KanbanCard({
   const type = typeMeta[plan.action_type]
   const overdue =
     plan.status !== 'completed' && plan.status !== 'verified' && isOverdue(plan.deadline)
+  const effectiveness = effectivenessMeta[plan.effectiveness_status]
 
   return (
     <div
@@ -341,17 +357,28 @@ function KanbanCard({
       </div>
 
       <div className="mt-4 flex items-center justify-between border-t border-dashed border-border/70 pt-3">
-        <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-          {statusLabels[plan.status]}
-        </span>
-        {overdue ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[10px] font-semibold text-destructive">
-            <AlertTriangle className="size-3" />
-            Prazo vencido
+        <div className="space-y-1">
+          <span className="block text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+            {statusLabels[plan.status]}
           </span>
-        ) : (
-          <span className="text-[11px] text-muted-foreground">Risco {plan.risk_id}</span>
-        )}
+          <Badge variant={effectiveness.variant} appearance="light" className="h-5 px-2 text-[10px]">
+            {effectiveness.label}
+          </Badge>
+        </div>
+        <div className="text-right">
+          {overdue ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-1 text-[10px] font-semibold text-destructive">
+              <AlertTriangle className="size-3" />
+              Prazo vencido
+            </span>
+          ) : (
+            <span className="text-[11px] text-muted-foreground">Risco {plan.risk_id}</span>
+          )}
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            Evidências {plan.evidence_count}
+            {plan.evidence_required ? ' (obrig.)' : ''}
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -499,6 +526,11 @@ export function ActionPlansPage() {
         const normalizedPlans = plansPayload.data.map((plan) => ({
           ...plan,
           involved_employees: plan.involved_employees ?? [],
+          evidence_required: plan.evidence_required ?? true,
+          evidence_count: plan.evidence_count ?? 0,
+          effectiveness_status: plan.effectiveness_status ?? 'not_evaluated',
+          effectiveness_notes: plan.effectiveness_notes ?? null,
+          effectiveness_evaluated_at: plan.effectiveness_evaluated_at ?? null,
         }))
         setPlans(normalizedPlans)
         setPlanOrder(createPlanOrder(normalizedPlans))
@@ -562,6 +594,12 @@ export function ActionPlansPage() {
   const overduePlans = filteredPlans.filter(
     plan => plan.status !== 'completed' && plan.status !== 'verified' && isOverdue(plan.deadline),
   ).length
+  const evaluatedPlans = filteredPlans.filter(
+    (plan) => plan.effectiveness_status !== 'not_evaluated',
+  ).length
+  const ineffectivePlans = filteredPlans.filter(
+    (plan) => plan.effectiveness_status === 'ineffective',
+  ).length
   const completionRate = totalPlans > 0 ? Math.round((completedPlans / totalPlans) * 100) : 0
 
   function handleStatusFilterChange(value: PlanStatus | 'all') {
@@ -615,6 +653,12 @@ export function ActionPlansPage() {
 
       return hasChanges ? nextPlans : currentPlans
     })
+  }
+
+  function updatePlan(planId: string, updater: (plan: ActionPlan) => ActionPlan) {
+    setPlans((currentPlans) =>
+      currentPlans.map((plan) => (plan.id === planId ? updater(plan) : plan)),
+    )
   }
 
   function resetCreatePlanDialogState() {
@@ -686,6 +730,11 @@ export function ActionPlansPage() {
       involved_employees: createInvolvedEmployees,
       deadline: createPlanDraft.deadline,
       status: 'pending',
+      evidence_required: createPlanDraft.evidence_required,
+      evidence_count: 0,
+      effectiveness_status: 'not_evaluated',
+      effectiveness_notes: null,
+      effectiveness_evaluated_at: null,
       created_at: new Date().toISOString(),
     }
 
@@ -774,7 +823,7 @@ export function ActionPlansPage() {
                     style={{ width: `${completionRate}%` }}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                   <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
                     <p className="font-semibold text-foreground">{pendingPlans}</p>
                     <p className="mt-1 text-muted-foreground">pendentes</p>
@@ -787,13 +836,17 @@ export function ActionPlansPage() {
                     <p className="font-semibold text-destructive">{overduePlans}</p>
                     <p className="mt-1 text-muted-foreground">vencidos</p>
                   </div>
+                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                    <p className="font-semibold text-foreground">{evaluatedPlans}</p>
+                    <p className="mt-1 text-muted-foreground">avaliados</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <StatCard
             title="Total"
             value={totalPlans}
@@ -821,6 +874,13 @@ export function ActionPlansPage() {
             helper="Demandam atenção imediata"
             icon={AlertTriangle}
             tone="destructive"
+          />
+          <StatCard
+            title="Ineficazes"
+            value={ineffectivePlans}
+            helper="Planos com baixa efetividade"
+            icon={FileCheck2}
+            tone="warning"
           />
         </div>
 
@@ -972,6 +1032,101 @@ export function ActionPlansPage() {
 
               <Separator />
 
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground">Evidências e eficácia</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Evidência obrigatória</p>
+                    <Badge variant={selectedPlan.evidence_required ? 'warning' : 'secondary'} appearance="light">
+                      {selectedPlan.evidence_required ? 'Obrigatória' : 'Opcional'}
+                    </Badge>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Arquivos anexados</p>
+                    <p className="text-sm font-medium">{selectedPlan.evidence_count}</p>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    updatePlan(selectedPlan.id, (plan) => ({
+                      ...plan,
+                      evidence_count: plan.evidence_count + 1,
+                    }))
+                    toast.success('Evidência anexada (mock)')
+                  }}
+                >
+                  <Paperclip className="size-4" />
+                  Anexar evidência
+                </Button>
+
+                <div className="space-y-2">
+                  <Label htmlFor="effectiveness-status">Avaliação de eficácia</Label>
+                  <Select
+                    value={selectedPlan.effectiveness_status}
+                    onValueChange={(value) => {
+                      updatePlan(selectedPlan.id, (plan) => ({
+                        ...plan,
+                        effectiveness_status: value as PlanEffectiveness,
+                      }))
+                    }}
+                  >
+                    <SelectTrigger id="effectiveness-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_evaluated">Sem avaliação</SelectItem>
+                      <SelectItem value="effective">Eficaz</SelectItem>
+                      <SelectItem value="partially_effective">Parcialmente eficaz</SelectItem>
+                      <SelectItem value="ineffective">Ineficaz</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="effectiveness-notes">Notas da verificação</Label>
+                  <Textarea
+                    id="effectiveness-notes"
+                    rows={3}
+                    value={selectedPlan.effectiveness_notes ?? ''}
+                    onChange={(event) =>
+                      updatePlan(selectedPlan.id, (plan) => ({
+                        ...plan,
+                        effectiveness_notes: event.target.value,
+                      }))
+                    }
+                    placeholder="Resumo da validação após execução do plano"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-border/70 bg-muted/35 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Última avaliação</p>
+                  <p className="text-xs font-medium">
+                    {selectedPlan.effectiveness_evaluated_at
+                      ? formatDateTimePtBr(selectedPlan.effectiveness_evaluated_at)
+                      : 'Ainda não avaliado'}
+                  </p>
+                </div>
+                <Button
+                  variant="primary"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    updatePlan(selectedPlan.id, (plan) => ({
+                      ...plan,
+                      effectiveness_evaluated_at: new Date().toISOString(),
+                    }))
+                    toast.success('Avaliação de eficácia salva')
+                  }}
+                >
+                  <FileCheck2 className="size-4" />
+                  Salvar avaliação
+                </Button>
+              </div>
+
+              <Separator />
+
               <div className="space-y-2">
                 <p className="text-xs font-medium text-muted-foreground">Funcionários envolvidos</p>
                 {selectedPlan.involved_employees.length > 0 ? (
@@ -998,11 +1153,7 @@ export function ActionPlansPage() {
                   variant="primary"
                   className="w-full gap-2"
                   onClick={() => {
-                    setPlans(currentPlans =>
-                      currentPlans.map(plan =>
-                        plan.id === selectedPlan.id ? { ...plan, status: 'completed' } : plan,
-                      ),
-                    )
+                    updatePlan(selectedPlan.id, (plan) => ({ ...plan, status: 'completed' }))
                     toast.success('Plano marcado como concluído')
                     setSelectedPlanId(null)
                   }}
@@ -1159,6 +1310,26 @@ export function ActionPlansPage() {
                   }
                   required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="plan-evidence-required">Política de evidência</Label>
+                <Select
+                  value={createPlanDraft.evidence_required ? 'required' : 'optional'}
+                  onValueChange={(value) =>
+                    setCreatePlanDraft((current) => ({
+                      ...current,
+                      evidence_required: value === 'required',
+                    }))
+                  }
+                >
+                  <SelectTrigger id="plan-evidence-required">
+                    <SelectValue placeholder="Selecione a política" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="required">Evidência obrigatória</SelectItem>
+                    <SelectItem value="optional">Evidência opcional</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan-description">Descrição</Label>

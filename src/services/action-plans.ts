@@ -1,6 +1,7 @@
 import { apiJson } from '@/lib/api-client'
 
 export type PlanStatus = 'pending' | 'in_progress' | 'completed' | 'verified' | 'overdue'
+export type PlanEffectiveness = 'not_evaluated' | 'effective' | 'partially_effective' | 'ineffective'
 
 export interface ActionPlanInvolvedEmployee {
   employee_id: string
@@ -20,6 +21,11 @@ export interface ActionPlan {
   involved_employees: ActionPlanInvolvedEmployee[]
   deadline: string
   status: PlanStatus
+  evidence_required: boolean
+  evidence_count: number
+  effectiveness_status: PlanEffectiveness
+  effectiveness_notes: string | null
+  effectiveness_evaluated_at: string | null
   created_at: string
 }
 
