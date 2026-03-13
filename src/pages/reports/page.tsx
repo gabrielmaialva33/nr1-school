@@ -351,11 +351,11 @@ export function ReportsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Relatorio</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead className="min-w-[250px]">Relatorio</TableHead>
+                  <TableHead className="text-center">Tipo</TableHead>
                   <TableHead className="hidden md:table-cell">Gerado em</TableHead>
                   <TableHead className="hidden md:table-cell">Responsavel</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right">Acoes</TableHead>
                 </TableRow>
               </TableHeader>
@@ -378,14 +378,14 @@ export function ReportsPage() {
                     return (
                     <TableRow key={report.id}>
                       <TableCell className="font-medium">{report.name}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge variant={reportTypeBadgeVariant(report.type)} appearance="light">
                           {report.type}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{formatDateTimePtBr(report.created_at)}</TableCell>
                       <TableCell className="hidden md:table-cell">{report.created_by}</TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {report.status === 'completed' ? (
                           <Badge variant="success" appearance="light" className="gap-1.5">
                             <FileCheck2 className="size-3.5" />

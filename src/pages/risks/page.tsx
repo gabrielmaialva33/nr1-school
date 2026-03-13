@@ -538,8 +538,8 @@ export function RisksPage() {
                     <TableHead className="hidden md:table-cell">Setor</TableHead>
                     <TableHead className="hidden md:table-cell text-center">Probabilidade</TableHead>
                     <TableHead className="hidden md:table-cell text-center">Severidade</TableHead>
-                    <TableHead>Nível</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="text-center">Nível</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -586,7 +586,7 @@ export function RisksPage() {
                         <TableCell className="hidden md:table-cell text-center font-medium">
                           {risk.severity}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Badge
                             className={cn(
                               'border-0',
@@ -596,7 +596,7 @@ export function RisksPage() {
                             {levelMeta[risk.risk_level].label}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Badge
                             variant={statusMeta[risk.status].variant}
                             appearance={statusMeta[risk.status].appearance}
