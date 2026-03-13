@@ -62,11 +62,11 @@ export const tenantProfiles: TenantProfile[] = [
   },
 ]
 
-const EMPLOYEE_AVATAR_COUNT = 5
+const EMPLOYEE_AVATAR_VARIANTS = [1, 3, 5, 8, 10, 12, 15, 18, 21, 24, 27, 30]
 
 function buildEmployeeAvatarUrl(seed: number, index: number) {
-  const slot = ((seed + index) % EMPLOYEE_AVATAR_COUNT) + 1
-  return `/media/avatars/gray/${slot}.png`
+  const slot = EMPLOYEE_AVATAR_VARIANTS[(seed + index) % EMPLOYEE_AVATAR_VARIANTS.length]
+  return `/media/avatars/300-${slot}.png`
 }
 
 const baseEnvironments = [

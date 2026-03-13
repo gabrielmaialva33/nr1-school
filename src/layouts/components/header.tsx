@@ -69,7 +69,7 @@ export function Header({
   const sessionUser = session?.user ?? null;
   const sessionAvatarUrl = sessionUser?.avatar
     ? toAbsoluteUrl(sessionUser.avatar)
-    : toAbsoluteUrl('/media/avatars/gray/1.png');
+    : toAbsoluteUrl('/media/avatars/300-1.png');
   const sessionAvatarLabel = sessionUser?.name ? getNameInitials(sessionUser.name) : 'NR';
 
   useEffect(() => {

@@ -2,7 +2,7 @@ import { createSeededMockDatabase, type MockDatabase } from './factory'
 
 const MOCK_DB_STORAGE_KEY = 'nr1-school.mock-db'
 const MOCK_DB_BUSTER_KEY = 'nr1-school.mock-db.buster'
-const MOCK_DB_BUSTER = '2026-03-13.action-plans.v3'
+const MOCK_DB_BUSTER = '2026-03-13.avatars-color.v4'
 const MOCK_SESSION_STORAGE_KEY = 'nr1-school.mock-session'
 
 export interface MockSession {
