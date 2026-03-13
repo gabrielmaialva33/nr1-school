@@ -21,6 +21,7 @@ import {
 import { SidebarMenu, SystemSidebarMenu } from './sidebar-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toAbsoluteUrl } from '@/lib/asset-path';
+import { getNameInitials } from '@/lib/formatters';
 import { Shield } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { fetchAuthSession, switchTenantSession, type AuthSessionPayload } from '@/services/auth';
@@ -64,6 +65,11 @@ export function Header({
       ? 'Perfil do Funcionário'
       : routeLabels[currentPath] ?? currentPath.replace(/-/g, ' ');
   const currentTenantId = getCurrentTenantId();
+  const sessionUser = session?.user ?? null;
+  const sessionAvatarUrl = sessionUser?.avatar
+    ? toAbsoluteUrl(sessionUser.avatar)
+    : toAbsoluteUrl('/media/avatars/300-1.png');
+  const sessionAvatarLabel = sessionUser?.name ? getNameInitials(sessionUser.name) : 'NR';
 
   useEffect(() => {
     let active = true;
@@ -206,8 +212,8 @@ export function Header({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative ml-1 h-9 w-9 rounded-full ring-1 ring-border/70 transition-shadow hover:shadow-sm">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={toAbsoluteUrl('/media/avatars/300-1.png')} alt="@user" />
-                <AvatarFallback>NR</AvatarFallback>
+                <AvatarImage src={sessionAvatarUrl} alt={sessionUser?.name ?? '@user'} />
+                <AvatarFallback>{sessionAvatarLabel}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>

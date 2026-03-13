@@ -14,6 +14,7 @@ export interface Employee {
   admission_date: string
   status: EmployeeStatus
   email: string
+  avatar_url: string | null
 }
 
 export type EmployeesResponse = PaginatedResponse<Employee>

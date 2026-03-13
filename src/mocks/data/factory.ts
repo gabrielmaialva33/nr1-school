@@ -62,6 +62,13 @@ export const tenantProfiles: TenantProfile[] = [
   },
 ]
 
+const METRONIC_AVATAR_COUNT = 34
+
+function buildMetronicAvatarUrl(seed: number, index: number) {
+  const slot = ((seed + index) % METRONIC_AVATAR_COUNT) + 1
+  return `/media/avatars/300-${slot}.png`
+}
+
 const baseEnvironments = [
   { name: 'Sala de Aula - Ensino Fundamental', type: 'educational', employee_ratio: 0.23 },
   { name: 'Sala de Aula - Ensino Médio', type: 'educational', employee_ratio: 0.18 },
@@ -384,7 +391,7 @@ function buildTenantFixture(profile: TenantProfile) {
     email: profile.responsible_email,
     role: 'admin' as const,
     is_active: true,
-    avatar: null,
+    avatar: buildMetronicAvatarUrl(profile.seed, 0),
     last_login: new Date().toISOString(),
     password: DEMO_PASSWORD,
   }
@@ -427,6 +434,7 @@ function buildTenantFixture(profile: TenantProfile) {
         { value: 'inactive', weight: 7 },
       ]),
       email: faker.internet.email({ firstName: role.replace(/\s+/g, '').slice(0, 6), provider: `${school.city.toLowerCase().replace(/\s+/g, '')}.edu.br` }),
+      avatar_url: buildMetronicAvatarUrl(profile.seed, index + 1),
       created_at: faker.date.past({ years: 3 }).toISOString(),
     }
   })

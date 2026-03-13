@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input, InputGroup, InputWrapper } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/pagination'
 import { createPaginationMeta } from '@/lib/pagination'
 import { formatCpfMasked, formatDatePtBr, getNameInitials } from '@/lib/formatters'
+import { toAbsoluteUrl } from '@/lib/asset-path'
 import {
   Select,
   SelectContent,
@@ -330,6 +331,9 @@ export function EmployeesPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="size-8">
+                            {employee.avatar_url ? (
+                              <AvatarImage src={toAbsoluteUrl(employee.avatar_url)} alt={employee.name} />
+                            ) : null}
                             <AvatarFallback className="text-[10px]">
                               {getNameInitials(employee.name)}
                             </AvatarFallback>

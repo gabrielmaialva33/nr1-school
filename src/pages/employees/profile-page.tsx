@@ -13,7 +13,7 @@ import {
   UserMinus,
   X,
 } from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -29,6 +29,7 @@ import {
   formatOptionalFileSize,
   getNameInitials,
 } from '@/lib/formatters'
+import { toAbsoluteUrl } from '@/lib/asset-path'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
@@ -359,6 +360,9 @@ export function EmployeeProfilePage() {
         <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="flex flex-col gap-5 md:flex-row md:items-start">
             <Avatar className="size-18 border border-white/15 bg-background/10 shadow-md shadow-black/15 ring-1 ring-white/8">
+              {employee.avatar_url ? (
+                <AvatarImage src={toAbsoluteUrl(employee.avatar_url)} alt={employee.name} className="h-full w-full" />
+              ) : null}
               <AvatarFallback className="bg-white/88 text-lg font-semibold text-[var(--profile-hero-accent)] dark:bg-slate-900/80 dark:text-slate-100">
                 {getNameInitials(employee.name)}
               </AvatarFallback>
