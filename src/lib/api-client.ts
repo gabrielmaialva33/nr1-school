@@ -1,4 +1,4 @@
-import { toAbsoluteUrl } from './helpers'
+import { toAbsoluteUrl } from './asset-path'
 import { clearTenantLocalCache, readLocalCache, type LocalCachePolicy, writeLocalCache } from './local-cache'
 import { getCurrentTenantId } from './tenant'
 

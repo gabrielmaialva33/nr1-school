@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarMenu, SystemSidebarMenu } from './sidebar-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toAbsoluteUrl } from '@/lib/helpers';
+import { toAbsoluteUrl } from '@/lib/asset-path';
 import { Shield } from 'lucide-react';
 import { useLocation, Link } from 'react-router-dom';
 import { fetchAuthSession, switchTenantSession, type AuthSessionPayload } from '@/services/auth';

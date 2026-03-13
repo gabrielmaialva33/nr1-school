@@ -2,7 +2,7 @@ import './styles/globals.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { App } from './App'
-import { toAbsoluteUrl } from './lib/helpers'
+import { toAbsoluteUrl } from './lib/asset-path'
 import { bootstrapTenantSession, getCurrentTenantId } from './lib/tenant'
 
 function patchApiFetchBasePath() {

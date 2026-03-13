@@ -1,4 +1,4 @@
-import { getInitials } from './helpers'
+import { getInitials } from './names'
 
 export function getNameInitials(name: string | null | undefined) {
   return getInitials(name, 2)

@@ -1,6 +1,6 @@
 'use client';
 
-import { toAbsoluteUrl } from '@/lib/helpers';
+import { toAbsoluteUrl } from '@/lib/asset-path';
 
 export function ScreenLoader() {
   return (
