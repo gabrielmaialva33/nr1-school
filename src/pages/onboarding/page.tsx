@@ -102,16 +102,16 @@ const modules: OnboardingModule[] = [
   },
 ]
 
-const wheelPositions = [
-  'left-1/2 top-2 -translate-x-1/2',
-  'right-8 top-[18%]',
-  'right-2 top-1/2 -translate-y-1/2',
-  'right-8 bottom-[18%]',
-  'left-1/2 bottom-2 -translate-x-1/2',
-  'left-8 bottom-[18%]',
-  'left-2 top-1/2 -translate-y-1/2',
-  'left-8 top-[18%]',
-]
+const orbitAngles = [-90, -45, 0, 45, 90, 135, 180, 225]
+
+function getOrbitPosition(index: number) {
+  const angleInRadians = (orbitAngles[index] * Math.PI) / 180
+  const radius = 42
+  const left = 50 + radius * Math.cos(angleInRadians)
+  const top = 50 + radius * Math.sin(angleInRadians)
+
+  return { left: `${left}%`, top: `${top}%` }
+}
 
 export function OnboardingPage() {
   return (
@@ -134,25 +134,56 @@ export function OnboardingPage() {
 
       <div className="grid gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
         <section className="surface-card rounded-[28px] border bg-card/90 p-5">
-          <div className="relative mx-auto aspect-square w-full max-w-[420px] rounded-full border border-dashed border-border/70 bg-muted/15 p-10">
-            <div className="absolute inset-[28%] flex flex-col items-center justify-center rounded-full border border-border/70 bg-background/95 text-center shadow-[var(--shadow-soft)]">
-              <p className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                Núcleo
-              </p>
-              <p className="mt-2 text-lg font-semibold text-foreground">NR1 School</p>
-              <p className="mt-1 text-xs text-muted-foreground">Ciclo contínuo de prevenção</p>
-            </div>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Mapa visual dos módulos
+            </p>
+            <Badge variant="outline" className="rounded-full text-[11px]">
+              8 áreas conectadas
+            </Badge>
+          </div>
 
-            {modules.map((module, index) => {
+          <div className="grid grid-cols-2 gap-2.5 md:hidden">
+            {modules.map((module) => {
               const Icon = module.icon
               return (
                 <Link
                   key={module.key}
                   to={module.route}
-                  className={cn(
-                    'absolute flex w-[128px] -translate-x-1/2 flex-col items-center gap-1 rounded-2xl border border-border/70 bg-background/96 p-2 text-center shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)]',
-                    wheelPositions[index],
-                  )}
+                  className="group flex items-center gap-2 rounded-xl border border-border/70 bg-background/95 px-3 py-2 shadow-[var(--shadow-soft)] transition hover:border-primary/35 hover:bg-primary/5"
+                >
+                  <div className={cn('inline-flex size-7 items-center justify-center rounded-full', module.tone)}>
+                    <Icon className="size-3.5" />
+                  </div>
+                  <p className="text-xs font-semibold leading-tight text-foreground">{module.title}</p>
+                </Link>
+              )
+            })}
+          </div>
+
+          <div className="relative mx-auto hidden aspect-square w-full max-w-[430px] rounded-full border border-dashed border-border/70 bg-muted/10 p-8 md:block">
+            <div className="pointer-events-none absolute inset-7 rounded-full border border-border/35" />
+            <div className="pointer-events-none absolute inset-[23%] rounded-full border border-border/45 bg-background/65 backdrop-blur-sm" />
+            <div className="absolute inset-[31%] flex flex-col items-center justify-center rounded-full border border-border/70 bg-background/95 text-center shadow-[var(--shadow-soft)]">
+              <p className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                Núcleo
+              </p>
+              <p className="mt-2 text-lg font-semibold text-foreground">NR1 School</p>
+              <p className="mt-1 max-w-32 text-xs leading-5 text-muted-foreground">
+                Ciclo contínuo de prevenção
+              </p>
+            </div>
+
+            {modules.map((module, index) => {
+              const Icon = module.icon
+              const position = getOrbitPosition(index)
+
+              return (
+                <Link
+                  key={module.key}
+                  to={module.route}
+                  style={position}
+                  className="absolute flex w-[118px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-2xl border border-border/70 bg-background/95 px-2 py-2 text-center shadow-[var(--shadow-soft)] transition hover:-translate-y-[52%] hover:border-primary/35 hover:bg-primary/5 hover:shadow-[var(--shadow-hover)]"
                 >
                   <div className={cn('inline-flex size-8 items-center justify-center rounded-full', module.tone)}>
                     <Icon className="size-4" />
