@@ -60,13 +60,12 @@ Abrir `http://localhost:5174`.
 
 ```mermaid
 flowchart LR
-  UI[React Pages] --> S[Services /api]
-  S --> MSW[MSW Handlers]
-  MSW --> DB[Mock DB (browser)]
-  UI --> Theme[Theme Tokens]
+  ui["React pages"] --> services["Services API"]
+  services --> handlers["MSW handlers"]
+  handlers --> mockdb["Mock DB browser"]
+  ui --> theme["Theme tokens"]
 ```
 
 ## :package: Releases
 
 Releases sao publicadas via GitHub Releases (tag `v0.1.0+`).
-
