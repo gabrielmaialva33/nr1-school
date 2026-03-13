@@ -34,6 +34,23 @@ export const medicalCertificatesHandlers = [
     })
   }),
 
+  http.get(mockApi('/api/employees/:id/medical-certificates'), async ({ params, request }) => {
+    await delay(220)
+    const { snapshot } = requireTenantSnapshot(request)
+
+    if (!snapshot) {
+      return HttpResponse.json({ errors: [{ message: 'Tenant não encontrado' }] }, { status: 404 })
+    }
+
+    const certificates = sortByCreatedAtDesc(snapshot.medical_certificates).filter(
+      (certificate) => certificate.employee_id === params.id,
+    )
+
+    return HttpResponse.json({
+      data: certificates,
+    })
+  }),
+
   http.post(mockApi('/api/medical-certificates'), async ({ request }) => {
     await delay(350)
 

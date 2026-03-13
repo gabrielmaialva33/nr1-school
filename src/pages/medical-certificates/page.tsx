@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { AlertCircle, Brain, CalendarDays, Check, FileText, Filter, MoreVertical, Search, Upload } from 'lucide-react'
+import {
+  AlertCircle,
+  Brain,
+  CalendarDays,
+  Check,
+  FileText,
+  Filter,
+  MoreVertical,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Upload,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardFooter, CardHeader, CardTitle, CardToolbar } from '@/components/ui/card'
@@ -51,6 +62,13 @@ import {
 } from './helpers'
 
 type Filters = MedicalCertificateFilters
+
+function nexusRiskBadgeVariant(risk: MedicalCertificate['nexus_risk']) {
+  if (risk === 'high') return 'destructive' as const
+  if (risk === 'medium') return 'warning' as const
+  if (risk === 'low') return 'success' as const
+  return 'secondary' as const
+}
 
 export function MedicalCertificatesPage() {
   const [filters, setFilters] = useState<Filters>({
@@ -267,23 +285,51 @@ export function MedicalCertificatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Atestados Médicos</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gerencie atestados e analise o nexo com riscos ocupacionais.
-          </p>
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-r from-background via-background to-info/10 p-6 shadow-xs shadow-black/5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <Badge variant="info" appearance="light" className="gap-1.5">
+              <ShieldCheck className="size-3.5" />
+              Monitoramento clinico ocupacional
+            </Badge>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Atestados medicos</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Centralize uploads, valide nexo ocupacional e acompanhe alertas para decisao de compliance.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">Fluxo com evidencias anexadas</Badge>
+              <Badge variant="warning" appearance="light">Triagem de saude mental ativa</Badge>
+              <Badge variant="secondary" appearance="light" className="gap-1.5">
+                <Sparkles className="size-3.5" />
+                Pronto para acoplar API real
+              </Badge>
+            </div>
+          </div>
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:max-w-xl">
+            <div className="rounded-xl border border-border/80 bg-card/95 p-4">
+              <p className="text-xs text-muted-foreground">Total no periodo</p>
+              <p className="mt-1 text-2xl font-semibold">{stats.total}</p>
+            </div>
+            <div className="rounded-xl border border-border/80 bg-card/95 p-4">
+              <p className="text-xs text-muted-foreground">Nexo alto</p>
+              <p className="mt-1 text-2xl font-semibold">{stats.highNexus}</p>
+            </div>
+            <div className="rounded-xl border border-border/80 bg-card/95 p-4">
+              <p className="text-xs text-muted-foreground">Media de dias</p>
+              <p className="mt-1 text-2xl font-semibold">{stats.avgDays}</p>
+            </div>
+          </div>
         </div>
+      </section>
 
+      <div className="flex justify-end">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="solid"
-              className="gap-2 self-start bg-orange-600 text-white hover:bg-orange-700"
-              onClick={() => setIsUploadOpen(true)}
-            >
+            <Button variant="primary" className="gap-2 self-start" onClick={() => setIsUploadOpen(true)}>
               <Upload className="size-4" />
-              Upload Atestado
+              Upload atestado
             </Button>
           </TooltipTrigger>
           <TooltipContent>Registrar novo atestado médico</TooltipContent>
@@ -346,15 +392,15 @@ export function MedicalCertificatesPage() {
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="lg" className="gap-2">
-                    <Filter className="size-4" />
-                    Filtros
-                    {filters.nexus_risk !== 'all' && (
-                      <Badge className="ml-1 border-0 bg-primary/10 px-1.5 py-0 text-[10px] text-primary">
-                        1
-                      </Badge>
-                    )}
-                  </Button>
+                    <Button variant="outline" size="lg" className="gap-2">
+                      <Filter className="size-4" />
+                      Filtros
+                      {filters.nexus_risk !== 'all' && (
+                        <Badge variant="primary" appearance="light" size="xs">
+                          1
+                        </Badge>
+                      )}
+                    </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuLabel>Risco de Nexo</DropdownMenuLabel>
@@ -473,7 +519,10 @@ export function MedicalCertificatesPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span>
-                                <Badge className={cn('border-0', nexusRiskMeta[certificate.nexus_risk]?.className)}>
+                                <Badge
+                                  variant={nexusRiskBadgeVariant(certificate.nexus_risk)}
+                                  appearance="light"
+                                >
                                   {nexusRiskMeta[certificate.nexus_risk]?.label}
                                 </Badge>
                               </span>

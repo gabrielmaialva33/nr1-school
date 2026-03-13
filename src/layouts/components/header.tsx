@@ -33,6 +33,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 const routeLabels: Record<string, string> = {
   '': 'Dashboard',
+  onboarding: 'Onboarding',
   environments: 'Setores',
   employees: 'Funcionários',
   assessments: 'Campanhas COPSOQ',
@@ -68,7 +69,7 @@ export function Header({
   const sessionUser = session?.user ?? null;
   const sessionAvatarUrl = sessionUser?.avatar
     ? toAbsoluteUrl(sessionUser.avatar)
-    : toAbsoluteUrl('/media/avatars/300-1.png');
+    : toAbsoluteUrl('/media/avatars/gray/1.png');
   const sessionAvatarLabel = sessionUser?.name ? getNameInitials(sessionUser.name) : 'NR';
 
   useEffect(() => {

@@ -39,6 +39,10 @@ interface EmployeesLookupResponse {
   data: EmployeeOption[]
 }
 
+interface EmployeeMedicalCertificatesResponse {
+  data: MedicalCertificate[]
+}
+
 export async function fetchCertificates(filters: MedicalCertificateFilters) {
   const params = new URLSearchParams({
     page: String(filters.page),
@@ -69,6 +73,11 @@ export async function fetchCertificateStats() {
 
 export async function fetchEmployeesLookup() {
   const payload = await apiJson<EmployeesLookupResponse>('/api/employees?page=1&per_page=200')
+  return payload.data
+}
+
+export async function fetchEmployeeMedicalCertificates(employeeId: string) {
+  const payload = await apiJson<EmployeeMedicalCertificatesResponse>(`/api/employees/${employeeId}/medical-certificates`)
   return payload.data
 }
 

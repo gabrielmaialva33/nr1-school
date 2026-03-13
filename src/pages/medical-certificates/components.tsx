@@ -179,8 +179,8 @@ export function MedicalCertificateDetailSheet({
 
               <div className="flex flex-col gap-2 pt-2">
                 <Button
-                  variant="solid"
-                  className="w-full gap-2 bg-green-600 text-white hover:bg-green-700"
+                  variant="primary"
+                  className="w-full gap-2"
                   onClick={() => {
                     toast.success(`Atestado de ${certificate.employee_name} aprovado`)
                     onOpenChange(false)
@@ -190,8 +190,8 @@ export function MedicalCertificateDetailSheet({
                   Aprovar
                 </Button>
                 <Button
-                  variant="solid"
-                  className="w-full gap-2 bg-red-600 text-white hover:bg-red-700"
+                  variant="destructive"
+                  className="w-full gap-2"
                   onClick={() => {
                     toast.success(`Atestado de ${certificate.employee_name} recusado`)
                     onOpenChange(false)
@@ -652,8 +652,7 @@ export function MedicalCertificateUploadDialog({
           <Button
             type="submit"
             form="upload-certificate-form"
-            variant="solid"
-            className="bg-orange-600 text-white hover:bg-orange-700"
+            variant="primary"
             disabled={!isUploadReady}
           >
             Registrar Atestado
@@ -695,12 +694,12 @@ export function MedicalCertificateMentalHealthBadge({
   isMentalHealth: boolean
 }) {
   return isMentalHealth ? (
-    <Badge className="border-0 bg-red-100 text-red-700">
+    <Badge variant="destructive" appearance="light">
       <Brain className="mr-1 size-3" />
       Sim
     </Badge>
   ) : (
-    <Badge className="border-0 bg-secondary text-secondary-foreground">Não</Badge>
+    <Badge variant="secondary" appearance="light">Não</Badge>
   )
 }
 

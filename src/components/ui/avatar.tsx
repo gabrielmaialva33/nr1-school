@@ -21,15 +21,21 @@ const avatarStatusVariants = cva('flex items-center rounded-full size-2 border-2
 
 function Avatar({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Root>) {
   return (
-    <AvatarPrimitive.Root data-slot="avatar" className={cn('relative flex shrink-0 size-10', className)} {...props} />
+    <AvatarPrimitive.Root
+      data-slot="avatar"
+      className={cn('relative flex shrink-0 size-10 overflow-hidden rounded-full', className)}
+      {...props}
+    />
   );
 }
 
 function AvatarImage({ className, ...props }: React.ComponentProps<typeof AvatarPrimitive.Image>) {
   return (
-    <div className={cn('relative overflow-hidden rounded-full', className)}>
-      <AvatarPrimitive.Image data-slot="avatar-image" className={cn('aspect-square h-full w-full')} {...props} />
-    </div>
+    <AvatarPrimitive.Image
+      data-slot="avatar-image"
+      className={cn('aspect-square h-full w-full rounded-full object-cover', className)}
+      {...props}
+    />
   );
 }
 

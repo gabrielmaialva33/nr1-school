@@ -257,8 +257,8 @@ export function ComplaintCreateDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button variant="solid" className="bg-orange-600 text-white hover:bg-orange-700" onClick={onSubmit}>
-            Registrar Denúncia
+          <Button variant="primary" onClick={onSubmit}>
+            Registrar denuncia
           </Button>
         </DialogFooter>
       </DialogContent>

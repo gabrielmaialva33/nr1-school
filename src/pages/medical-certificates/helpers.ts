@@ -24,17 +24,17 @@ export const nexusRiskMeta: Record<
   high: {
     label: 'Alto',
     description: 'Forte relação com ambiente de trabalho',
-    className: 'bg-red-100 text-red-700',
+    className: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-200',
   },
   medium: {
     label: 'Médio',
     description: 'Possível relação com ambiente de trabalho',
-    className: 'bg-yellow-100 text-yellow-700',
+    className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-200',
   },
   low: {
     label: 'Baixo',
     description: 'Pouca relação com ambiente de trabalho',
-    className: 'bg-green-100 text-green-700',
+    className: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-200',
   },
   none: {
     label: '—',
@@ -47,9 +47,18 @@ export const employeeStatusMeta: Record<
   EmployeeOption['status'],
   { label: string; className: string }
 > = {
-  active: { label: 'Ativo', className: 'bg-green-100 text-green-700' },
-  on_leave: { label: 'Afastado', className: 'bg-yellow-100 text-yellow-700' },
-  inactive: { label: 'Em férias', className: 'bg-slate-100 text-slate-700' },
+  active: {
+    label: 'Ativo',
+    className: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-200',
+  },
+  on_leave: {
+    label: 'Afastado',
+    className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-200',
+  },
+  inactive: {
+    label: 'Em férias',
+    className: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-200',
+  },
 }
 
 export function createEmptyUploadDraft(): UploadDraft {

@@ -62,11 +62,11 @@ export const tenantProfiles: TenantProfile[] = [
   },
 ]
 
-const METRONIC_AVATAR_COUNT = 34
+const EMPLOYEE_AVATAR_COUNT = 5
 
-function buildMetronicAvatarUrl(seed: number, index: number) {
-  const slot = ((seed + index) % METRONIC_AVATAR_COUNT) + 1
-  return `/media/avatars/300-${slot}.png`
+function buildEmployeeAvatarUrl(seed: number, index: number) {
+  const slot = ((seed + index) % EMPLOYEE_AVATAR_COUNT) + 1
+  return `/media/avatars/gray/${slot}.png`
 }
 
 const baseEnvironments = [
@@ -391,7 +391,7 @@ function buildTenantFixture(profile: TenantProfile) {
     email: profile.responsible_email,
     role: 'admin' as const,
     is_active: true,
-    avatar: buildMetronicAvatarUrl(profile.seed, 0),
+    avatar: buildEmployeeAvatarUrl(profile.seed, 0),
     last_login: new Date().toISOString(),
     password: DEMO_PASSWORD,
   }
@@ -434,7 +434,7 @@ function buildTenantFixture(profile: TenantProfile) {
         { value: 'inactive', weight: 7 },
       ]),
       email: faker.internet.email({ firstName: role.replace(/\s+/g, '').slice(0, 6), provider: `${school.city.toLowerCase().replace(/\s+/g, '')}.edu.br` }),
-      avatar_url: buildMetronicAvatarUrl(profile.seed, index + 1),
+      avatar_url: buildEmployeeAvatarUrl(profile.seed, index + 1),
       created_at: faker.date.past({ years: 3 }).toISOString(),
     }
   })
@@ -478,6 +478,20 @@ function buildTenantFixture(profile: TenantProfile) {
         status === 'overdue'
           ? faker.date.past({ years: 0.2 }).toISOString().split('T')[0]
           : faker.date.future({ years: 0.5 }).toISOString().split('T')[0]
+      const environmentEmployees = employees.filter(
+        (employee) => employee.environment_id === risk.environment_id && employee.status !== 'inactive',
+      )
+      const fallbackEmployees = employees.filter((employee) => employee.status !== 'inactive')
+      const employeePool = environmentEmployees.length > 0 ? environmentEmployees : fallbackEmployees
+      const maxInvolved = Math.min(4, employeePool.length)
+      const involvedCount = Math.max(1, faker.number.int({ min: 1, max: maxInvolved }))
+      const involvedEmployees = faker.helpers.arrayElements(employeePool, involvedCount).map((employee) => ({
+        employee_id: employee.id,
+        employee_name: employee.name,
+        employee_role: employee.role,
+        employee_avatar_url: employee.avatar_url,
+      }))
+      const responsibleEmployee = faker.helpers.arrayElement(involvedEmployees)
 
       return {
         id: faker.string.uuid(),
@@ -491,7 +505,8 @@ function buildTenantFixture(profile: TenantProfile) {
           'Formalizar procedimento, responsável e prazo com evidências de verificação.',
         ]),
         action_type: faker.helpers.arrayElement(['preventive', 'corrective', 'monitoring']),
-        responsible_name: faker.person.fullName(),
+        responsible_name: responsibleEmployee.employee_name,
+        involved_employees: involvedEmployees,
         deadline,
         status,
         created_at: faker.date.past({ years: 0.3 }).toISOString(),

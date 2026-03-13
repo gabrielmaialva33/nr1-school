@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, EyeOff, FileQuestion, Filter, Info, MoreVertical, Plus, Search } from 'lucide-react'
+import {
+  AlertTriangle,
+  EyeOff,
+  FileQuestion,
+  Filter,
+  Info,
+  MoreVertical,
+  Plus,
+  Search,
+  ShieldAlert,
+  Sparkles,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardFooter, CardHeader, CardTitle, CardToolbar } from '@/components/ui/card'
@@ -30,6 +40,20 @@ import {
 } from './helpers'
 
 type Filters = ComplaintFilters
+
+function complaintStatusBadgeVariant(status: Complaint['status']) {
+  if (status === 'received') return 'primary' as const
+  if (status === 'under_review') return 'info' as const
+  if (status === 'investigating') return 'warning' as const
+  if (status === 'resolved') return 'success' as const
+  return 'secondary' as const
+}
+
+function complaintPriorityBadgeVariant(priorityLabel: string) {
+  if (priorityLabel === 'Crítica') return 'destructive' as const
+  if (priorityLabel === 'Alta') return 'warning' as const
+  return 'info' as const
+}
 
 export function ComplaintsPage() {
   const [filters, setFilters] = useState<Filters>({
@@ -103,6 +127,7 @@ export function ComplaintsPage() {
 
   const hasActiveFilters = filters.search.trim() !== '' || filters.status !== 'all'
   const statusFilterLabel = filters.status === 'all' ? 'Filtros' : complaintStatusMeta[filters.status].label
+  const openBacklog = Math.max(stats.total - stats.resolved, 0)
 
   function handleCreateSubmit() {
     if (!createForm.category || !createForm.description.trim()) {
@@ -115,24 +140,63 @@ export function ComplaintsPage() {
     setCreateForm(createEmptyComplaintDraft())
   }
 
+  function handleClearFilters() {
+    setFilters((current) => ({
+      ...current,
+      search: '',
+      status: 'all',
+      page: 1,
+    }))
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Canal de Denúncias</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Acompanhe relatos de assédio e conflitos com sigilo e segurança.
-          </p>
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-gradient-to-r from-background via-background to-warning/10 p-6 shadow-xs shadow-black/5">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-3">
+            <Badge variant="warning" appearance="light" className="gap-1.5">
+              <ShieldAlert className="size-3.5" />
+              Canal protegido e auditavel
+            </Badge>
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">Canal de denuncias</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Registre, traga para triagem e acompanhe investigacoes com rastreabilidade e sigilo.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline">Fluxo confidencial</Badge>
+              <Badge variant="info" appearance="light">Retencao de historico ativa</Badge>
+              <Badge variant="secondary" appearance="light" className="gap-1.5">
+                <Sparkles className="size-3.5" />
+                Pronto para compliance NR-1
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid w-full gap-3 sm:grid-cols-3 lg:max-w-xl">
+            <div className="rounded-xl border border-border/80 bg-card/95 p-4">
+              <p className="text-xs text-muted-foreground">Backlog aberto</p>
+              <p className="mt-1 text-2xl font-semibold">{openBacklog}</p>
+            </div>
+            <div className="rounded-xl border border-border/80 bg-card/95 p-4">
+              <p className="text-xs text-muted-foreground">Resolvidas</p>
+              <p className="mt-1 text-2xl font-semibold">{stats.resolved}</p>
+            </div>
+            <div className="rounded-xl border border-border/80 bg-card/95 p-4">
+              <p className="text-xs text-muted-foreground">Anonimas</p>
+              <p className="mt-1 text-2xl font-semibold">{stats.anonymous}</p>
+            </div>
+          </div>
         </div>
+      </section>
+
+      <div className="flex justify-end">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              variant="solid"
-              className="gap-2 self-start bg-orange-600 text-white hover:bg-orange-700"
-              onClick={() => setIsCreateOpen(true)}
-            >
+            <Button variant="primary" className="gap-2 self-start" onClick={() => setIsCreateOpen(true)}>
               <Plus className="size-4" />
-              Nova Denúncia
+              Nova denuncia
             </Button>
           </TooltipTrigger>
           <TooltipContent>Registrar nova denúncia</TooltipContent>
@@ -237,6 +301,12 @@ export function ComplaintsPage() {
                   <SelectItem value="30">30 por página</SelectItem>
                 </SelectContent>
               </Select>
+
+              {hasActiveFilters && (
+                <Button variant="ghost" size="lg" onClick={handleClearFilters}>
+                  Limpar
+                </Button>
+              )}
             </div>
           </CardToolbar>
         </CardHeader>
@@ -298,7 +368,10 @@ export function ComplaintsPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span>
-                                <Badge className={cn('border-0', complaintStatusMeta[complaint.status].className)}>
+                                <Badge
+                                  variant={complaintStatusBadgeVariant(complaint.status)}
+                                  appearance="light"
+                                >
                                   {complaintStatusMeta[complaint.status].label}
                                 </Badge>
                               </span>
@@ -310,7 +383,12 @@ export function ComplaintsPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <span>
-                                <Badge className={cn('border-0', priority.className)}>{priority.label}</Badge>
+                                <Badge
+                                  variant={complaintPriorityBadgeVariant(priority.label)}
+                                  appearance="light"
+                                >
+                                  {priority.label}
+                                </Badge>
                               </span>
                             </TooltipTrigger>
                             <TooltipContent>{priority.description}</TooltipContent>

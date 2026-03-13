@@ -4,6 +4,8 @@ import { toast } from 'sonner'
 import {
   AlertCircle,
   ArrowLeft,
+  Brain,
+  CalendarDays,
   Download,
   FileText,
   GraduationCap,
@@ -42,6 +44,10 @@ import {
 } from '@/services/employee-compliance'
 import { fetchEmployeeById, type Employee } from '@/services/employees'
 import {
+  fetchEmployeeMedicalCertificates,
+  type MedicalCertificate,
+} from '@/services/medical-certificates'
+import {
   ACCEPTED_UPLOAD_FILE_TYPES,
   MAX_UPLOAD_FILE_SIZE,
   buildComplianceAuditTrail,
@@ -79,6 +85,13 @@ function ProfileKpi({
   )
 }
 
+function medicalNexusBadgeVariant(risk: MedicalCertificate['nexus_risk']) {
+  if (risk === 'high') return 'destructive' as const
+  if (risk === 'medium') return 'warning' as const
+  if (risk === 'low') return 'success' as const
+  return 'secondary' as const
+}
+
 export function EmployeeProfilePage() {
   const navigate = useNavigate()
   const { employeeId = '' } = useParams()
@@ -86,6 +99,7 @@ export function EmployeeProfilePage() {
 
   const [employee, setEmployee] = useState<Employee | null>(null)
   const [compliance, setCompliance] = useState<EmployeeComplianceOverview | null>(null)
+  const [medicalCertificates, setMedicalCertificates] = useState<MedicalCertificate[]>([])
   const [trainingsLookup, setTrainingsLookup] = useState<TrainingLookup[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -102,12 +116,14 @@ export function EmployeeProfilePage() {
       fetchEmployeeById(employeeId),
       fetchEmployeeComplianceOverview(employeeId),
       fetchTrainingsLookup(),
+      fetchEmployeeMedicalCertificates(employeeId),
     ])
-      .then(([employeePayload, compliancePayload, trainingsPayload]) => {
+      .then(([employeePayload, compliancePayload, trainingsPayload, medicalCertificatesPayload]) => {
         if (!active) return
         setEmployee(employeePayload)
         setCompliance(compliancePayload)
         setTrainingsLookup(trainingsPayload)
+        setMedicalCertificates(medicalCertificatesPayload)
       })
       .catch((err) => {
         if (!active) return
@@ -587,6 +603,75 @@ export function EmployeeProfilePage() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Nenhuma entrega de EPI registrada para o colaborador.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="employee-profile-panel p-5">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Atestados medicos</h2>
+                <p className="text-sm text-muted-foreground">
+                  Historico de afastamentos, CID e analise de nexo ocupacional do colaborador.
+                </p>
+              </div>
+              <Link
+                to="/medical-certificates"
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Abrir central de atestados
+              </Link>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {medicalCertificates.length > 0 ? (
+                medicalCertificates.map((certificate) => (
+                  <div key={certificate.id} className="employee-profile-row">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge
+                          variant={certificate.is_mental_health ? 'destructive' : 'secondary'}
+                          appearance="light"
+                        >
+                          {certificate.is_mental_health ? (
+                            <Brain className="mr-1 size-3.5" />
+                          ) : null}
+                          CID {certificate.icd_code}
+                        </Badge>
+                        <Badge
+                          variant={medicalNexusBadgeVariant(certificate.nexus_risk)}
+                          appearance="light"
+                        >
+                          Nexo {certificate.nexus_risk === 'none' ? '—' : certificate.nexus_risk}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Registro em {formatDateTimePtBr(certificate.created_at)} • Médico {certificate.doctor_name}
+                      </p>
+                    </div>
+                    <div className="grid gap-3 text-sm md:min-w-80 md:grid-cols-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Emissao</p>
+                        <p>{formatDatePtBr(certificate.issue_date)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Retorno</p>
+                        <p>{formatDatePtBr(certificate.return_date)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Afastamento</p>
+                        <p className="inline-flex items-center gap-1">
+                          <CalendarDays className="size-3.5 text-muted-foreground" />
+                          {certificate.days_off} dias
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum atestado registrado para este colaborador.
                 </p>
               )}
             </div>
