@@ -46,7 +46,8 @@ They are useful as a design/reference inventory, but they are not the current ap
 - `src/lib` is for cross-feature utilities only.
 - Use `formatters.ts` for presentation formatting reused across modules.
 - Use `pagination.ts` for pagination mechanics.
-- Keep `helpers.ts` minimal and generic; avoid adding domain-specific formatting there.
+- Use focused files such as `asset-path.ts`, `names.ts`, `timing.ts` and `identifiers.ts` for shared primitives.
+- Treat `helpers.ts` as a compatibility layer for older imports; avoid adding new product logic there.
 
 ### Services
 
@@ -69,9 +70,9 @@ They are useful as a design/reference inventory, but they are not the current ap
 
 These are the main remaining cleanup targets:
 
-1. Reduce overlap between `src/lib/helpers.ts` and newer specialized utilities.
-2. Keep `src/vendor/metronic` isolated from the runtime app unless there is an explicit migration.
-3. Gradually extract repeated `status/meta` maps from large pages into feature modules when reused inside the same domain.
+1. Keep `src/vendor/metronic` isolated from the runtime app unless there is an explicit migration.
+2. Gradually extract repeated `status/meta` maps from large pages into feature modules when reused inside the same domain.
+3. Continue splitting large route files when orchestration and presentation start drifting together.
 
 ## Practical North Star
 
