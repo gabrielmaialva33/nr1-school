@@ -104,26 +104,31 @@ function StatCard({
     primary: {
       iconWrap: 'bg-primary/10 text-primary',
       value: 'text-primary',
+      accent: 'from-primary/90 via-orange-400/80 to-transparent',
     },
     destructive: {
       iconWrap: 'bg-destructive/10 text-destructive',
       value: 'text-destructive',
+      accent: 'from-destructive/85 via-orange-400/75 to-transparent',
     },
     info: {
       iconWrap: 'bg-info/10 text-info',
       value: 'text-info',
+      accent: 'from-info/85 via-cyan-400/70 to-transparent',
     },
     success: {
       iconWrap: 'bg-success/10 text-success',
       value: 'text-success',
+      accent: 'from-success/85 via-emerald-400/70 to-transparent',
     },
   }
 
   return (
-    <div className="surface-card rounded-2xl border bg-card p-5">
+    <div className="surface-card relative overflow-hidden rounded-2xl border border-border/75 bg-card/95 p-5 shadow-[var(--shadow-soft)]">
+      <div className={cn('pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r', tones[tone].accent)} />
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
           <p
             className={cn(
               'text-3xl font-semibold tracking-tight',
@@ -142,16 +147,28 @@ function StatCard({
           <Icon className="size-5" />
         </div>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">{helper}</p>
+      <p className="mt-3 text-xs text-muted-foreground/90">{helper}</p>
     </div>
   )
 }
 
 const levelMeta: Record<RiskLevel, { label: string; className: string }> = {
-  low: { label: 'Trivial', className: 'bg-emerald-100 text-emerald-700' },
-  medium: { label: 'Tolerável', className: 'bg-blue-100 text-blue-700' },
-  high: { label: 'Substancial', className: 'bg-orange-100 text-orange-700' },
-  critical: { label: 'Intolerável', className: 'bg-red-100 text-red-700' },
+  low: {
+    label: 'Trivial',
+    className: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/55 dark:text-emerald-200',
+  },
+  medium: {
+    label: 'Tolerável',
+    className: 'bg-blue-100 text-blue-800 dark:bg-blue-950/55 dark:text-blue-200',
+  },
+  high: {
+    label: 'Substancial',
+    className: 'bg-orange-100 text-orange-800 dark:bg-orange-950/55 dark:text-orange-200',
+  },
+  critical: {
+    label: 'Intolerável',
+    className: 'bg-red-100 text-red-800 dark:bg-red-950/55 dark:text-red-200',
+  },
 }
 
 const statusMeta: Record<
@@ -291,8 +308,8 @@ export function RisksPage() {
   return (
     <div className="page-shell space-y-6">
       <div className="page-stagger grid gap-6">
-        <div className="relative overflow-hidden rounded-[30px] border border-border/70 bg-card/85 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm md:p-7">
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.16),transparent_38%),radial-gradient(circle_at_62%_56%,rgba(249,115,22,0.12),transparent_30%)]" />
+        <div className="relative overflow-hidden rounded-[30px] border border-border/75 bg-gradient-to-br from-card via-card to-orange-50/35 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm dark:to-orange-950/20 md:p-7">
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,rgba(239,68,68,0.2),transparent_40%),radial-gradient(circle_at_62%_56%,rgba(249,115,22,0.18),transparent_34%)]" />
           <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_340px] xl:items-end">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold tracking-wide text-primary uppercase">
@@ -307,19 +324,19 @@ export function RisksPage() {
                 O inventário consolida criticidade, tratamento e controle em uma visão operacional.
               </p>
               <div className="mt-5 flex flex-wrap gap-2.5">
-                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                <div className="rounded-full border border-border/70 bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-[var(--shadow-soft)]">
                   {stats.critical} intoleráveis no radar
                 </div>
-                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                <div className="rounded-full border border-border/70 bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-[var(--shadow-soft)]">
                   {stats.treating} em tratamento ativo
                 </div>
-                <div className="rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-foreground">
+                <div className="rounded-full border border-border/70 bg-background/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-[var(--shadow-soft)]">
                   {controlledRate}% sob controle
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[26px] border border-border/70 bg-background/72 p-4 shadow-[var(--shadow-soft)]">
+            <div className="rounded-[26px] border border-border/70 bg-background/92 p-4 shadow-[var(--shadow-soft)]">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
@@ -338,22 +355,22 @@ export function RisksPage() {
                 </Button>
               </div>
               <div className="mt-4 space-y-3">
-                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div className="h-2 overflow-hidden rounded-full bg-muted/80">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-destructive via-orange-500 to-primary transition-all"
                     style={{ width: `${criticalRate}%` }}
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                  <div className="rounded-2xl border border-border/70 bg-muted/25 px-3 py-2">
                     <p className="font-semibold text-destructive">{stats.critical}</p>
                     <p className="mt-1 text-muted-foreground">críticos</p>
                   </div>
-                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                  <div className="rounded-2xl border border-border/70 bg-muted/25 px-3 py-2">
                     <p className="font-semibold text-info">{monitoredRate}%</p>
                     <p className="mt-1 text-muted-foreground">em tratamento</p>
                   </div>
-                  <div className="rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                  <div className="rounded-2xl border border-border/70 bg-muted/25 px-3 py-2">
                     <p className="font-semibold text-success">{controlledRate}%</p>
                     <p className="mt-1 text-muted-foreground">controlados</p>
                   </div>
@@ -394,8 +411,8 @@ export function RisksPage() {
           />
         </div>
 
-        <Card className="surface-card rounded-[28px] border border-border/80 bg-card/92 backdrop-blur-sm">
-        <CardHeader className="flex-col items-start gap-4">
+        <Card className="surface-card rounded-[28px] border border-border/80 bg-card/96 shadow-[var(--shadow-soft)] backdrop-blur-sm">
+        <CardHeader className="flex-col items-start gap-4 border-b border-border/70 pb-5">
           <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
               <CardTitle>Inventário de Riscos</CardTitle>
@@ -486,7 +503,7 @@ export function RisksPage() {
                 <TabsTrigger
                   key={tab.value}
                   value={tab.value}
-                  className="rounded-full border border-border px-4 data-[state=active]:border-primary data-[state=active]:bg-primary/10"
+                  className="rounded-full border border-border bg-background/80 px-4 data-[state=active]:border-primary data-[state=active]:bg-primary/12 data-[state=active]:text-primary"
                 >
                   {tab.label}
                 </TabsTrigger>
@@ -496,27 +513,27 @@ export function RisksPage() {
         </CardHeader>
 
         <CardContent>
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/25 px-4 py-3 text-xs">
-            <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 font-medium text-foreground">
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/15 px-4 py-3 text-xs">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
               <Activity className="size-3.5 text-primary" />
               {meta.total} registros no recorte atual
             </div>
             {hasActiveFilters ? (
-              <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 font-medium text-foreground">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
                 <AlertTriangle className="size-3.5 text-orange-500" />
                 filtros ativos aplicados
               </div>
             ) : (
-              <div className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 font-medium text-foreground">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/95 px-3 py-1.5 font-medium text-foreground">
                 <ShieldCheck className="size-3.5 text-success" />
                 visão consolidada do inventário
               </div>
             )}
           </div>
-          <div className="overflow-x-auto rounded-2xl border border-border/70">
+          <div className="overflow-x-auto rounded-2xl border border-border/70 bg-background/70">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-muted/30 hover:bg-muted/30">
                 <TableHead>Categoria MTE</TableHead>
                 <TableHead className="hidden md:table-cell">Setor</TableHead>
                 <TableHead className="hidden md:table-cell text-center">Probabilidade</TableHead>
@@ -557,11 +574,11 @@ export function RisksPage() {
                 </TableRow>
               ) : (
                 risks.map((risk) => (
-                  <TableRow key={risk.id} className="hover:bg-muted/35">
+                  <TableRow key={risk.id} className="border-t border-border/70 hover:bg-muted/25">
                     <TableCell>
                       <div className="space-y-1">
-                        <p className="font-medium">{risk.category_label}</p>
-                        <p className="line-clamp-1 text-xs text-muted-foreground">
+                        <p className="font-medium text-foreground">{risk.category_label}</p>
+                        <p className="line-clamp-2 text-xs text-muted-foreground">
                           {risk.description}
                         </p>
                       </div>
@@ -600,7 +617,7 @@ export function RisksPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="gap-1.5"
+                              className="gap-1.5 bg-background/90"
                               onClick={() => setSelectedRisk(risk)}
                             >
                               <Eye className="size-3.5" />
@@ -614,7 +631,7 @@ export function RisksPage() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="gap-1.5"
+                              className="gap-1.5 bg-background/90"
                               onClick={() =>
                                 toast.success('Abrindo editor de risco...')
                               }
